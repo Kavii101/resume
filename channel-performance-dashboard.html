@@ -1,0 +1,1271 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Channel Performance Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- EmailJS SDK for visitor tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* Channel card hover */
+        .channel-card { transition: all 0.3s ease; cursor: pointer; }
+        .channel-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        /* Modal backdrop */
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 50; }
+        .modal-backdrop.active { display: flex; align-items: center; justify-content: center; padding: 1rem; }
+        
+        /* Health status colors */
+        .health-excellent { background-color: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .health-good { background-color: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .health-warning { background-color: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .health-critical { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        
+        /* Tooltip styles */
+        .tooltip-container { position: relative; display: inline-block; }
+        .tooltip-icon { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center;
+            width: 16px; 
+            height: 16px; 
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-radius: 50%; 
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 4px;
+            transition: all 0.2s;
+        }
+        .tooltip-icon:hover { 
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.1);
+        }
+        .tooltip-content {
+            display: none;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: nowrap;
+            max-width: 300px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            font-weight: normal;
+        }
+        .tooltip-content.show { display: block; animation: fadeIn 0.2s ease-out; }
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1f2937;
+        }
+        .tooltip-content.wide { white-space: normal; }
+        
+        /* Welcome tour overlay */
+        .tour-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+        .tour-overlay.active { display: block; }
+        .tour-highlight {
+            position: relative;
+            z-index: 1001;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+            border-radius: 8px;
+        }
+        .tour-popup {
+            position: fixed;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            z-index: 1002;
+        }
+        
+        /* Pulse animation for first-time elements */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .pulse { animation: pulse 2s infinite; }
+        
+        /* Back to Resume Button */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-button:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Back to Resume Button -->
+    <button class="back-button" onclick="window.close()">
+        ← Back to Resume
+    </button>
+    <div class="min-h-screen">
+        <div class="max-w-7xl mx-auto p-6">
+            <!-- Header Section -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-2xl p-8 text-white shadow-xl mb-6 fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">
+                            Channel Performance Dashboard
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                <span class="tooltip-content wide">
+                                    This dashboard provides real-time insights into your marketing channel performance. 
+                                    Use it to identify which channels are profitable and which need optimization.
+                                </span>
+                            </span>
+                        </h1>
+                        <p class="text-blue-100">Real-time insights into your marketing channel effectiveness</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <button onclick="toggleMonthDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 backdrop-blur text-white border border-white/30 hover:bg-white/30 transition-colors">
+                                <i data-lucide="calendar" class="w-5 h-5"></i>
+                                <span id="currentMonthDisplay">2025-05</span>
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </button>
+                            <div id="monthDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 hidden z-50">
+                                <div class="p-2 border-b border-gray-200">
+                                    <p class="text-xs text-gray-500 font-medium px-2">Select Month</p>
+                                </div>
+                                <div class="max-h-64 overflow-y-auto">
+                                    <button onclick="selectMonth('2025-05')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm font-medium bg-blue-50">2025-05</button> <button onclick="selectMonth('2025-04')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2025-04</button> <button onclick="selectMonth('2025-03')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2025-03</button> <button onclick="selectMonth('2025-02')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2025-02</button> <button onclick="selectMonth('2025-01')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2025-01</button> <button onclick="selectMonth('2024-12')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-12</button> <button onclick="selectMonth('2024-11')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-11</button> <button onclick="selectMonth('2024-10')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-10</button> <button onclick="selectMonth('2024-09')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-09</button> <button onclick="selectMonth('2024-08')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-08</button> <button onclick="selectMonth('2024-07')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-07</button> <button onclick="selectMonth('2024-06')" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-gray-700 text-sm ">2024-06</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="showAffiliatePerformance()" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 backdrop-blur text-white border border-white/30 hover:bg-white/30 transition-colors">
+                            <i data-lucide="users" class="w-5 h-5"></i>
+                            Affiliate Analysis
+                        </button>
+                        <button onclick="exportDashboard()" class="p-2 rounded-lg bg-white/20 backdrop-blur hover:bg-white/30 transition-colors">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-4 gap-4">
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-4">
+                        <p class="text-blue-100 text-sm mb-1">
+                            Total Revenue
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                <span class="tooltip-content">
+                                    Net revenue after all fees and costs.<br>
+                                    Formula: NGR - Bonus - All Fees - Taxes
+                                </span>
+                            </span>
+                        </p>
+                        <p class="text-2xl font-bold" id="totalRevenue">€0</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-4">
+                        <p class="text-blue-100 text-sm mb-1">
+                            Marketing Spend
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                <span class="tooltip-content">
+                                    Total marketing budget spent<br>
+                                    across all channels this month
+                                </span>
+                            </span>
+                        </p>
+                        <p class="text-2xl font-bold" id="totalSpend">€0</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-4">
+                        <p class="text-blue-100 text-sm mb-1">
+                            Total FTDs
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                <span class="tooltip-content">
+                                    First Time Depositors -<br>
+                                    New players who made their first deposit
+                                </span>
+                            </span>
+                        </p>
+                        <p class="text-2xl font-bold" id="totalFTDs">0</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur rounded-lg p-4">
+                        <p class="text-blue-100 text-sm mb-1">
+                            Avg LTV/CAC
+                            <span class="tooltip-container">
+                                <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                <span class="tooltip-content wide">
+                                    Average Lifetime Value / Customer Acquisition Cost<br>
+                                    >1.15 = Profitable | <0.85 = Unprofitable
+                                </span>
+                            </span>
+                        </p>
+                        <p class="text-2xl font-bold" id="avgLtvCac">0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Overview -->
+            <div class="grid grid-cols-3 gap-6 mb-6">
+                <!-- High Performers -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        High Performers (<span id="winnersCount">0</span>)
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                            <span class="tooltip-content wide">
+                                Channels with LTV/CAC ≥ 1.15<br>
+                                These channels are profitable and should receive continued or increased investment
+                            </span>
+                        </span>
+                    </h2>
+                    <div class="space-y-3" id="winnersContainer"></div>
+                </div>
+
+                <!-- Monitor Closely -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                        Monitor Closely (<span id="monitorCount">0</span>)
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                            <span class="tooltip-content wide">
+                                Channels with 0.85 ≤ LTV/CAC < 1.15<br>
+                                These channels are near break-even and need optimization to improve profitability
+                            </span>
+                        </span>
+                    </h2>
+                    <div class="space-y-3" id="monitorContainer"></div>
+                </div>
+
+                <!-- Needs Attention -->
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        Needs Attention (<span id="problemsCount">0</span>)
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                            <span class="tooltip-content wide">
+                                Channels with LTV/CAC < 0.85<br>
+                                These channels are unprofitable and should be reduced or optimized immediately
+                            </span>
+                        </span>
+                    </h2>
+                    <div class="space-y-3" id="problemsContainer"></div>
+                </div>
+            </div>
+
+            <!-- Visualizations -->
+            <div class="grid grid-cols-2 gap-6">
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        LTV vs CAC Analysis
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                            <span class="tooltip-content wide">
+                                Each dot represents a channel. Position shows the relationship between 
+                                Customer Acquisition Cost (X-axis) and Lifetime Value (Y-axis). 
+                                Dots above the diagonal line are profitable.
+                            </span>
+                        </span>
+                    </h3>
+                    <div id="scatterChart" style="height: 300px;"></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        Revenue Distribution
+                        <span class="tooltip-container">
+                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                            <span class="tooltip-content wide">
+                                Shows the percentage of total revenue contributed by each channel. 
+                                Larger slices indicate channels generating more revenue.
+                            </span>
+                        </span>
+                    </h3>
+                    <div id="pieChart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Channel Detail Modal -->
+    <div id="channelModal" class="modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900" id="modalChannelName"></h2>
+                    <p class="text-gray-600 mt-1">Channel Performance Analysis</p>
+                </div>
+                <button onclick="closeModal()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Health Score -->
+                <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Channel Health Score</h3>
+                    <div class="flex items-center gap-6">
+                        <div class="relative w-32 h-32">
+                            <svg class="transform -rotate-90 w-32 h-32">
+                                <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="12" fill="none" />
+                                <circle id="healthCircle" cx="64" cy="64" r="56" stroke="#10b981" stroke-width="12" 
+                                        fill="none" stroke-dasharray="352" stroke-dashoffset="176" 
+                                        class="transition-all duration-1000" />
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-3xl font-bold" id="healthScore">0</span>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-600">Status</p>
+                                    <p class="font-semibold capitalize" id="healthStatus">-</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Recommendation</p>
+                                    <p class="font-semibold" id="recommendation">-</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">
+                                        LTV/CAC Ratio
+                                        <span class="tooltip-container">
+                                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                            <span class="tooltip-content">
+                                                Lifetime Value / Customer Acquisition Cost<br>
+                                                Higher is better. Target: >1.15
+                                            </span>
+                                        </span>
+                                    </p>
+                                    <p class="font-semibold" id="ltvCacRatio">-</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">
+                                        FTD Achievement
+                                        <span class="tooltip-container">
+                                            <span class="tooltip-icon" onmouseover="showTooltip(this)" onmouseout="hideTooltip(this)">?</span>
+                                            <span class="tooltip-content">
+                                                % of break-even target achieved<br>
+                                                100%+ means channel is meeting targets
+                                            </span>
+                                        </span>
+                                    </p>
+                                    <p class="font-semibold" id="ftdAchievement">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historical Performance -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Historical Performance</h3>
+                    <div id="historicalChart" style="height: 250px;"></div>
+                </div>
+
+                <!-- Key Metrics -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 rounded-lg bg-green-50">
+                                <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-2xl font-bold text-gray-900" id="modalRevenue">€0</p>
+                            <p class="text-sm text-gray-600">Revenue</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 rounded-lg bg-blue-50">
+                                <i data-lucide="target" class="w-6 h-6 text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-2xl font-bold text-gray-900" id="modalBudget">€0</p>
+                            <p class="text-sm text-gray-600">Marketing Budget</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="p-3 rounded-lg bg-purple-50">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-purple-600"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <p class="text-2xl font-bold text-gray-900" id="modalConvRate">0%</p>
+                            <p class="text-sm text-gray-600">Conversion Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Tour -->
+    <div id="tourOverlay" class="tour-overlay">
+        <div id="tourPopup" class="tour-popup" style="top: 100px; left: 50%; transform: translateX(-50%);">
+            <h3 class="text-xl font-bold mb-3">Welcome to Your Channel Performance Dashboard! 👋</h3>
+            <p class="text-gray-600 mb-4">Let's take a quick tour to help you get the most out of this dashboard.</p>
+            <div class="flex justify-between items-center">
+                <button onclick="skipTour()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Skip Tour</button>
+                <button onclick="startTour()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start Tour</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Affiliate Performance Page -->
+    <div id="affiliatePerformancePage" class="hidden">
+        <div class="max-w-7xl mx-auto p-6">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-xl mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">Affiliate Performance Analysis</h1>
+                        <p class="text-purple-100">Deep dive into individual affiliate channel performance over time</p>
+                    </div>
+                    <button onclick="backToDashboard()" class="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur rounded-lg hover:bg-white/30 transition-colors">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Affiliate Selector -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Select Affiliate Channel</h2>
+                    <div class="text-sm text-gray-500">
+                        <span id="affiliateDataRange">-</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-3" id="affiliateButtonGrid">
+                    <!-- Affiliate buttons will be populated here -->
+                </div>
+            </div>
+
+            <!-- Performance Overview -->
+            <div id="affiliateMetrics" class="hidden">
+                <div class="grid grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-gray-600">Average LTV</p>
+                            <i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900" id="affAvgLTV">€0</p>
+                        <p class="text-xs text-gray-500 mt-1">Lifetime Value per FTD</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-gray-600">Average CAC</p>
+                            <i data-lucide="dollar-sign" class="w-5 h-5 text-green-500"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900" id="affAvgCAC">€0</p>
+                        <p class="text-xs text-gray-500 mt-1">Cost per Acquisition</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-gray-600">Total FTDs</p>
+                            <i data-lucide="users" class="w-5 h-5 text-purple-500"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900" id="affTotalFTDs">0</p>
+                        <p class="text-xs text-gray-500 mt-1">All-time conversions</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-gray-600">Total Revenue</p>
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-orange-500"></i>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900" id="affTotalRevenue">€0</p>
+                        <p class="text-xs text-gray-500 mt-1">Net revenue generated</p>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
+                        <div id="affiliateTrendChart" style="height: 350px;"></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue & FTDs</h3>
+                        <div id="affiliateRevenueChart" style="height: 350px;"></div>
+                    </div>
+                </div>
+
+                <!-- Detailed Table -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Monthly Performance Details</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registrations</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FTDs</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conv. Rate</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LTV</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CAC</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">LTV/CAC</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="affiliateTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Data from Python
+        const allData = [{"registration_month_year":"2025-05","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":2128,"total_ftd":358,"ftd_conversion_rate":16.82,"ltv":-0.3,"cac":28.36,"ltv_cac_ratio":null,"total_ggr":9717.79,"total_ngr":8866.64,"total_deposits":27964.63,"total_withdrawals":23401.38,"total_bonus_cost":4566.18,"provider_fee":971.78,"payment_fee":1078.69,"govt_tax":2040.74,"other_tax":48.59,"platform_fee":268.7,"revenue":-108.03,"marketing_budget":10152.57,"3month_rolling_avg_ltv":6.31,"6month_rolling_avg_ltv":22.18,"9month_rolling_avg_ltv":25.13,"break_even_ftd_target":458.0,"recommendation":"Monitor"},{"registration_month_year":"2025-05","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":1199,"total_ftd":151,"ftd_conversion_rate":12.59,"ltv":5.44,"cac":47.4,"ltv_cac_ratio":0.11,"total_ggr":4464.3,"total_ngr":5063.4,"total_deposits":7640.6,"total_withdrawals":5293.42,"total_bonus_cost":2441.19,"provider_fee":446.43,"payment_fee":271.61,"govt_tax":937.5,"other_tax":22.32,"platform_fee":123.44,"revenue":820.9,"marketing_budget":7157.49,"3month_rolling_avg_ltv":4.77,"6month_rolling_avg_ltv":4.47,"9month_rolling_avg_ltv":13.24,"break_even_ftd_target":1603.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":1581,"total_ftd":210,"ftd_conversion_rate":13.28,"ltv":-8.79,"cac":17.95,"ltv_cac_ratio":null,"total_ggr":8735.66,"total_ngr":9486.61,"total_deposits":26277.67,"total_withdrawals":21173.83,"total_bonus_cost":7343.68,"provider_fee":873.57,"payment_fee":996.48,"govt_tax":1834.49,"other_tax":43.68,"platform_fee":241.54,"revenue":-1846.83,"marketing_budget":3769.67,"3month_rolling_avg_ltv":10.07,"6month_rolling_avg_ltv":14.36,"9month_rolling_avg_ltv":15.89,"break_even_ftd_target":263.0,"recommendation":"Monitor"},{"registration_month_year":"2025-05","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":214,"total_ftd":52,"ftd_conversion_rate":24.3,"ltv":37.88,"cac":64.39,"ltv_cac_ratio":0.59,"total_ggr":4806.94,"total_ngr":4726.35,"total_deposits":12012.5,"total_withdrawals":3554.3,"total_bonus_cost":782.58,"provider_fee":480.69,"payment_fee":326.9,"govt_tax":1009.46,"other_tax":24.03,"platform_fee":132.91,"revenue":1969.77,"marketing_budget":3348.37,"3month_rolling_avg_ltv":37.41,"6month_rolling_avg_ltv":47.67,"9month_rolling_avg_ltv":55.73,"break_even_ftd_target":71.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":92,"total_ftd":21,"ftd_conversion_rate":22.83,"ltv":51.71,"cac":129.26,"ltv_cac_ratio":0.4,"total_ggr":2168.92,"total_ngr":2021.97,"total_deposits":2607.57,"total_withdrawals":793.32,"total_bonus_cost":121.43,"provider_fee":216.89,"payment_fee":71.42,"govt_tax":455.47,"other_tax":10.84,"platform_fee":59.97,"revenue":1085.95,"marketing_budget":2714.36,"3month_rolling_avg_ltv":33.41,"6month_rolling_avg_ltv":42.69,"9month_rolling_avg_ltv":48.41,"break_even_ftd_target":64.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":84,"total_ftd":10,"ftd_conversion_rate":11.9,"ltv":14.41,"cac":221.87,"ltv_cac_ratio":0.06,"total_ggr":321.82,"total_ngr":265.59,"total_deposits":280.06,"total_withdrawals":11.85,"total_bonus_cost":5.04,"provider_fee":32.18,"payment_fee":6.13,"govt_tax":67.58,"other_tax":1.61,"platform_fee":8.9,"revenue":144.15,"marketing_budget":2218.69,"3month_rolling_avg_ltv":14.31,"6month_rolling_avg_ltv":28.79,"9month_rolling_avg_ltv":25.64,"break_even_ftd_target":78.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":69,"total_ftd":12,"ftd_conversion_rate":17.39,"ltv":21.86,"cac":147.51,"ltv_cac_ratio":0.15,"total_ggr":883.18,"total_ngr":794.43,"total_deposits":2404.35,"total_withdrawals":1151.87,"total_bonus_cost":154.75,"provider_fee":88.32,"payment_fee":74.68,"govt_tax":185.47,"other_tax":4.42,"platform_fee":24.42,"revenue":262.38,"marketing_budget":1770.13,"3month_rolling_avg_ltv":11.06,"6month_rolling_avg_ltv":17.52,"9month_rolling_avg_ltv":25.64,"break_even_ftd_target":102.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":61,"total_ftd":10,"ftd_conversion_rate":16.39,"ltv":-20.95,"cac":109.55,"ltv_cac_ratio":null,"total_ggr":316.13,"total_ngr":323.21,"total_deposits":365.49,"total_withdrawals":682.29,"total_bonus_cost":402.39,"provider_fee":31.61,"payment_fee":22.0,"govt_tax":66.39,"other_tax":1.58,"platform_fee":8.74,"revenue":-209.51,"marketing_budget":1095.51,"3month_rolling_avg_ltv":33.23,"6month_rolling_avg_ltv":46.75,"9month_rolling_avg_ltv":46.08,"break_even_ftd_target":24.0,"recommendation":"Monitor"},{"registration_month_year":"2025-05","traffic_source_group":"META","channel_type":"META","total_registrations":859,"total_ftd":170,"ftd_conversion_rate":19.79,"ltv":5.03,"cac":76.32,"ltv_cac_ratio":0.07,"total_ggr":5460.44,"total_ngr":5069.72,"total_deposits":13724.46,"total_withdrawals":9263.28,"total_bonus_cost":1860.77,"provider_fee":546.04,"payment_fee":482.74,"govt_tax":1146.69,"other_tax":27.3,"platform_fee":150.98,"revenue":855.18,"marketing_budget":12974.4,"3month_rolling_avg_ltv":16.26,"6month_rolling_avg_ltv":16.49,"9month_rolling_avg_ltv":19.41,"break_even_ftd_target":787.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":1802,"total_ftd":591,"ftd_conversion_rate":32.8,"ltv":8.32,"cac":24.13,"ltv_cac_ratio":0.34,"total_ggr":51890.22,"total_ngr":49221.81,"total_deposits":208676.24,"total_withdrawals":127299.05,"total_bonus_cost":19468.79,"provider_fee":5189.02,"payment_fee":7055.48,"govt_tax":10896.95,"other_tax":259.45,"platform_fee":1434.76,"revenue":4917.35,"marketing_budget":14258.02,"3month_rolling_avg_ltv":27.78,"6month_rolling_avg_ltv":30.27,"9month_rolling_avg_ltv":29.1,"break_even_ftd_target":472.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-05","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":790,"total_ftd":183,"ftd_conversion_rate":23.16,"ltv":9.3,"cac":77.54,"ltv_cac_ratio":0.12,"total_ggr":13944.09,"total_ngr":12640.86,"total_deposits":31530.24,"total_withdrawals":23244.6,"total_bonus_cost":5010.76,"provider_fee":1394.41,"payment_fee":1150.27,"govt_tax":2928.26,"other_tax":69.72,"platform_fee":385.55,"revenue":1701.89,"marketing_budget":14190.28,"3month_rolling_avg_ltv":25.98,"6month_rolling_avg_ltv":37.01,"9month_rolling_avg_ltv":37.86,"break_even_ftd_target":384.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":2217,"total_ftd":370,"ftd_conversion_rate":16.69,"ltv":-1.61,"cac":32.56,"ltv_cac_ratio":null,"total_ggr":23943.38,"total_ngr":22308.45,"total_deposits":98037.72,"total_withdrawals":70241.15,"total_bonus_cost":11166.79,"provider_fee":2394.34,"payment_fee":3533.86,"govt_tax":5028.11,"other_tax":119.72,"platform_fee":662.03,"revenue":-596.39,"marketing_budget":12046.91,"3month_rolling_avg_ltv":18.76,"6month_rolling_avg_ltv":28.57,"9month_rolling_avg_ltv":28.48,"break_even_ftd_target":422.0,"recommendation":"Monitor"},{"registration_month_year":"2025-04","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":1369,"total_ftd":173,"ftd_conversion_rate":12.64,"ltv":10.38,"cac":32.1,"ltv_cac_ratio":0.32,"total_ggr":8236.63,"total_ngr":8030.98,"total_deposits":13360.23,"total_withdrawals":10630.93,"total_bonus_cost":2908.87,"provider_fee":823.66,"payment_fee":503.81,"govt_tax":1729.69,"other_tax":41.18,"platform_fee":227.74,"revenue":1796.01,"marketing_budget":5552.8,"3month_rolling_avg_ltv":6.16,"6month_rolling_avg_ltv":7.66,"9month_rolling_avg_ltv":24.79,"break_even_ftd_target":726.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":159,"total_ftd":34,"ftd_conversion_rate":21.38,"ltv":23.25,"cac":85.65,"ltv_cac_ratio":0.27,"total_ggr":1880.45,"total_ngr":1643.57,"total_deposits":1905.06,"total_withdrawals":508.25,"total_bonus_cost":157.93,"provider_fee":188.04,"payment_fee":50.68,"govt_tax":394.89,"other_tax":9.4,"platform_fee":51.99,"revenue":790.63,"marketing_budget":2911.99,"3month_rolling_avg_ltv":20.54,"6month_rolling_avg_ltv":24.25,"9month_rolling_avg_ltv":24.69,"break_even_ftd_target":121.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":124,"total_ftd":11,"ftd_conversion_rate":8.87,"ltv":8.4,"cac":185.21,"ltv_cac_ratio":0.05,"total_ggr":631.19,"total_ngr":438.26,"total_deposits":377.07,"total_withdrawals":59.19,"total_bonus_cost":120.43,"provider_fee":63.12,"payment_fee":9.16,"govt_tax":132.55,"other_tax":3.16,"platform_fee":17.45,"revenue":92.39,"marketing_budget":2037.33,"3month_rolling_avg_ltv":26.31,"6month_rolling_avg_ltv":30.04,"9month_rolling_avg_ltv":27.8,"break_even_ftd_target":68.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":72,"total_ftd":12,"ftd_conversion_rate":16.67,"ltv":47.94,"cac":151.58,"ltv_cac_ratio":0.32,"total_ggr":2116.64,"total_ngr":2148.82,"total_deposits":2105.59,"total_withdrawals":599.87,"total_bonus_cost":791.48,"provider_fee":211.66,"payment_fee":56.81,"govt_tax":444.49,"other_tax":10.58,"platform_fee":58.53,"revenue":575.27,"marketing_budget":1818.92,"3month_rolling_avg_ltv":27.89,"6month_rolling_avg_ltv":46.54,"9month_rolling_avg_ltv":45.81,"break_even_ftd_target":40.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":1583,"total_ftd":178,"ftd_conversion_rate":11.24,"ltv":14.6,"cac":9.65,"ltv_cac_ratio":1.51,"total_ggr":10979.96,"total_ngr":9102.79,"total_deposits":23673.75,"total_withdrawals":7322.94,"total_bonus_cost":2091.01,"provider_fee":1098.0,"payment_fee":650.93,"govt_tax":2305.79,"other_tax":54.9,"platform_fee":303.6,"revenue":2598.57,"marketing_budget":1717.0,"3month_rolling_avg_ltv":9.6,"6month_rolling_avg_ltv":16.1,"9month_rolling_avg_ltv":16.1,"break_even_ftd_target":107.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-04","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":195,"total_ftd":44,"ftd_conversion_rate":22.56,"ltv":39.99,"cac":33.01,"ltv_cac_ratio":1.21,"total_ggr":4568.16,"total_ngr":4287.54,"total_deposits":5795.62,"total_withdrawals":1992.11,"total_bonus_cost":799.26,"provider_fee":456.82,"payment_fee":163.54,"govt_tax":959.31,"other_tax":22.84,"platform_fee":126.31,"revenue":1759.46,"marketing_budget":1452.26,"3month_rolling_avg_ltv":36.28,"6month_rolling_avg_ltv":55.07,"9month_rolling_avg_ltv":57.98,"break_even_ftd_target":27.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-04","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":79,"total_ftd":16,"ftd_conversion_rate":20.25,"ltv":18.65,"cac":82.86,"ltv_cac_ratio":0.23,"total_ggr":727.67,"total_ngr":644.12,"total_deposits":678.45,"total_withdrawals":113.97,"total_bonus_cost":79.81,"provider_fee":72.77,"payment_fee":16.64,"govt_tax":152.81,"other_tax":3.64,"platform_fee":20.12,"revenue":298.34,"marketing_budget":1325.79,"3month_rolling_avg_ltv":39.17,"6month_rolling_avg_ltv":51.18,"9month_rolling_avg_ltv":52.13,"break_even_ftd_target":26.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"META","channel_type":"META","total_registrations":1323,"total_ftd":317,"ftd_conversion_rate":23.96,"ltv":16.43,"cac":65.15,"ltv_cac_ratio":0.25,"total_ggr":20795.7,"total_ngr":18576.29,"total_deposits":52120.5,"total_withdrawals":35770.82,"total_bonus_cost":4397.85,"provider_fee":2079.57,"payment_fee":1845.72,"govt_tax":4367.1,"other_tax":103.98,"platform_fee":575.0,"revenue":5207.07,"marketing_budget":20652.76,"3month_rolling_avg_ltv":16.64,"6month_rolling_avg_ltv":18.71,"9month_rolling_avg_ltv":24.55,"break_even_ftd_target":1104.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-04","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":2081,"total_ftd":807,"ftd_conversion_rate":38.78,"ltv":20.72,"cac":21.76,"ltv_cac_ratio":0.95,"total_ggr":88050.68,"total_ngr":80874.76,"total_deposits":270367.1,"total_withdrawals":193563.73,"total_bonus_cost":24237.04,"provider_fee":8805.07,"payment_fee":9742.55,"govt_tax":18490.64,"other_tax":440.25,"platform_fee":2434.6,"revenue":16724.61,"marketing_budget":17559.42,"3month_rolling_avg_ltv":32.57,"6month_rolling_avg_ltv":32.26,"9month_rolling_avg_ltv":29.55,"break_even_ftd_target":545.0,"recommendation":"Monitor"},{"registration_month_year":"2025-04","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":1162,"total_ftd":283,"ftd_conversion_rate":24.35,"ltv":20.64,"cac":81.85,"ltv_cac_ratio":0.25,"total_ggr":21696.08,"total_ngr":21156.7,"total_deposits":103425.76,"total_withdrawals":50629.3,"total_bonus_cost":4646.56,"provider_fee":2169.61,"payment_fee":3235.16,"govt_tax":4556.18,"other_tax":108.48,"platform_fee":599.9,"revenue":5840.82,"marketing_budget":23163.06,"3month_rolling_avg_ltv":36.18,"6month_rolling_avg_ltv":41.73,"9month_rolling_avg_ltv":40.32,"break_even_ftd_target":556.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":3085,"total_ftd":430,"ftd_conversion_rate":13.94,"ltv":6.23,"cac":49.09,"ltv_cac_ratio":0.13,"total_ggr":20187.21,"total_ngr":20276.21,"total_deposits":94758.42,"total_withdrawals":80264.98,"total_bonus_cost":7003.76,"provider_fee":2018.72,"payment_fee":3675.49,"govt_tax":4239.31,"other_tax":100.94,"platform_fee":558.18,"revenue":2679.81,"marketing_budget":21109.19,"3month_rolling_avg_ltv":31.4,"6month_rolling_avg_ltv":33.24,"9month_rolling_avg_ltv":31.66,"break_even_ftd_target":636.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":3039,"total_ftd":276,"ftd_conversion_rate":9.08,"ltv":5.67,"cac":27.71,"ltv_cac_ratio":0.2,"total_ggr":12635.5,"total_ngr":11638.33,"total_deposits":42741.85,"total_withdrawals":29972.53,"total_bonus_cost":4216.43,"provider_fee":1263.55,"payment_fee":1527.0,"govt_tax":2653.46,"other_tax":63.18,"platform_fee":349.37,"revenue":1565.35,"marketing_budget":7646.95,"3month_rolling_avg_ltv":4.39,"6month_rolling_avg_ltv":10.72,"9month_rolling_avg_ltv":27.19,"break_even_ftd_target":714.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":169,"total_ftd":29,"ftd_conversion_rate":17.16,"ltv":10.8,"cac":167.93,"ltv_cac_ratio":0.06,"total_ggr":1203.87,"total_ngr":1029.68,"total_deposits":2826.16,"total_withdrawals":3283.05,"total_bonus_cost":175.71,"provider_fee":120.39,"payment_fee":128.29,"govt_tax":252.81,"other_tax":6.02,"platform_fee":33.29,"revenue":313.17,"marketing_budget":4870.09,"3month_rolling_avg_ltv":33.42,"6month_rolling_avg_ltv":27.36,"9month_rolling_avg_ltv":26.43,"break_even_ftd_target":179.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":150,"total_ftd":26,"ftd_conversion_rate":17.33,"ltv":-32.69,"cac":138.14,"ltv_cac_ratio":null,"total_ggr":1818.4,"total_ngr":1743.07,"total_deposits":6633.19,"total_withdrawals":6172.28,"total_bonus_cost":1701.1,"provider_fee":181.84,"payment_fee":268.91,"govt_tax":381.86,"other_tax":9.09,"platform_fee":50.28,"revenue":-850.03,"marketing_budget":3591.61,"3month_rolling_avg_ltv":43.0,"6month_rolling_avg_ltv":39.09,"9month_rolling_avg_ltv":36.44,"break_even_ftd_target":92.0,"recommendation":"Monitor"},{"registration_month_year":"2025-03","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":82,"total_ftd":15,"ftd_conversion_rate":18.29,"ltv":11.87,"cac":201.33,"ltv_cac_ratio":0.06,"total_ggr":1229.35,"total_ngr":861.73,"total_deposits":2171.44,"total_withdrawals":1328.55,"total_bonus_cost":188.97,"provider_fee":122.93,"payment_fee":73.5,"govt_tax":258.16,"other_tax":6.15,"platform_fee":33.99,"revenue":178.03,"marketing_budget":3019.95,"3month_rolling_avg_ltv":57.3,"6month_rolling_avg_ltv":57.74,"9month_rolling_avg_ltv":57.89,"break_even_ftd_target":53.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":1984,"total_ftd":263,"ftd_conversion_rate":13.26,"ltv":1.31,"cac":7.84,"ltv_cac_ratio":0.17,"total_ggr":8223.13,"total_ngr":8613.96,"total_deposits":23560.95,"total_withdrawals":22487.1,"total_bonus_cost":4485.31,"provider_fee":822.31,"payment_fee":967.01,"govt_tax":1726.86,"other_tax":41.12,"platform_fee":227.37,"revenue":343.99,"marketing_budget":2062.85,"3month_rolling_avg_ltv":15.79,"6month_rolling_avg_ltv":19.06,"9month_rolling_avg_ltv":19.06,"break_even_ftd_target":109.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":150,"total_ftd":47,"ftd_conversion_rate":31.33,"ltv":13.87,"cac":43.89,"ltv_cac_ratio":0.32,"total_ggr":5585.91,"total_ngr":4982.78,"total_deposits":9245.85,"total_withdrawals":5620.49,"total_bonus_cost":2104.82,"provider_fee":558.59,"payment_fee":312.19,"govt_tax":1173.04,"other_tax":27.93,"platform_fee":154.45,"revenue":651.76,"marketing_budget":2062.85,"3month_rolling_avg_ltv":50.74,"6month_rolling_avg_ltv":51.13,"9month_rolling_avg_ltv":51.13,"break_even_ftd_target":41.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":241,"total_ftd":66,"ftd_conversion_rate":27.39,"ltv":29.28,"cac":31.26,"ltv_cac_ratio":0.94,"total_ggr":7227.23,"total_ngr":6733.58,"total_deposits":24390.14,"total_withdrawals":11899.14,"total_bonus_cost":1562.67,"provider_fee":722.72,"payment_fee":762.07,"govt_tax":1517.72,"other_tax":36.14,"platform_fee":199.83,"revenue":1932.42,"marketing_budget":2062.85,"3month_rolling_avg_ltv":50.84,"6month_rolling_avg_ltv":62.76,"9month_rolling_avg_ltv":62.76,"break_even_ftd_target":33.0,"recommendation":"Monitor"},{"registration_month_year":"2025-03","traffic_source_group":"META","channel_type":"META","total_registrations":2191,"total_ftd":394,"ftd_conversion_rate":17.98,"ltv":14.43,"cac":125.3,"ltv_cac_ratio":0.12,"total_ggr":23729.29,"total_ngr":20377.42,"total_deposits":48873.56,"total_withdrawals":31243.43,"total_bonus_cost":4880.31,"provider_fee":2372.93,"payment_fee":1682.46,"govt_tax":4983.15,"other_tax":118.65,"platform_fee":656.11,"revenue":5683.81,"marketing_budget":49368.17,"3month_rolling_avg_ltv":15.86,"6month_rolling_avg_ltv":20.64,"9month_rolling_avg_ltv":25.82,"break_even_ftd_target":2392.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":2511,"total_ftd":969,"ftd_conversion_rate":38.59,"ltv":23.84,"cac":30.45,"ltv_cac_ratio":0.78,"total_ggr":119333.02,"total_ngr":104275.42,"total_deposits":313234.3,"total_withdrawals":223447.61,"total_bonus_cost":29017.89,"provider_fee":11933.3,"payment_fee":11270.32,"govt_tax":25059.93,"other_tax":596.67,"platform_fee":3299.56,"revenue":23097.75,"marketing_budget":29502.8,"3month_rolling_avg_ltv":37.52,"6month_rolling_avg_ltv":32.5,"9month_rolling_avg_ltv":34.05,"break_even_ftd_target":908.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-03","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":2224,"total_ftd":633,"ftd_conversion_rate":28.46,"ltv":19.34,"cac":103.47,"ltv_cac_ratio":0.19,"total_ggr":61288.66,"total_ngr":56435.48,"total_deposits":179359.61,"total_withdrawals":107209.15,"total_bonus_cost":17173.51,"provider_fee":6128.87,"payment_fee":6017.94,"govt_tax":12870.62,"other_tax":306.44,"platform_fee":1694.63,"revenue":12243.46,"marketing_budget":65494.38,"3month_rolling_avg_ltv":45.19,"6month_rolling_avg_ltv":43.82,"9month_rolling_avg_ltv":43.82,"break_even_ftd_target":1495.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":3481,"total_ftd":557,"ftd_conversion_rate":16.0,"ltv":14.3,"cac":70.42,"ltv_cac_ratio":0.2,"total_ggr":44578.56,"total_ngr":44818.46,"total_deposits":144463.1,"total_withdrawals":95157.04,"total_bonus_cost":16545.54,"provider_fee":4457.86,"payment_fee":5032.02,"govt_tax":9361.5,"other_tax":222.89,"platform_fee":1232.6,"revenue":7966.06,"marketing_budget":39225.2,"3month_rolling_avg_ltv":38.06,"6month_rolling_avg_ltv":34.55,"9month_rolling_avg_ltv":34.55,"break_even_ftd_target":1136.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":327,"total_ftd":85,"ftd_conversion_rate":25.99,"ltv":57.47,"cac":69.49,"ltv_cac_ratio":0.83,"total_ggr":12745.37,"total_ngr":12340.69,"total_deposits":19512.11,"total_withdrawals":5309.37,"total_bonus_cost":2566.91,"provider_fee":1274.54,"payment_fee":521.25,"govt_tax":2676.53,"other_tax":63.73,"platform_fee":352.41,"revenue":4885.32,"marketing_budget":5906.81,"3month_rolling_avg_ltv":23.98,"6month_rolling_avg_ltv":32.93,"9month_rolling_avg_ltv":32.93,"break_even_ftd_target":180.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":1964,"total_ftd":209,"ftd_conversion_rate":10.64,"ltv":14.31,"cac":27.28,"ltv_cac_ratio":0.52,"total_ggr":11833.13,"total_ngr":10879.29,"total_deposits":24181.16,"total_withdrawals":18903.85,"total_bonus_cost":2929.33,"provider_fee":1183.31,"payment_fee":904.79,"govt_tax":2484.96,"other_tax":59.17,"platform_fee":327.19,"revenue":2990.55,"marketing_budget":5702.27,"3month_rolling_avg_ltv":18.64,"6month_rolling_avg_ltv":20.25,"9month_rolling_avg_ltv":20.25,"break_even_ftd_target":282.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":153,"total_ftd":52,"ftd_conversion_rate":33.99,"ltv":37.88,"cac":96.15,"ltv_cac_ratio":0.39,"total_ggr":6848.64,"total_ngr":6562.72,"total_deposits":15808.37,"total_withdrawals":8312.48,"total_bonus_cost":1739.97,"provider_fee":684.86,"payment_fee":506.54,"govt_tax":1438.22,"other_tax":34.24,"platform_fee":189.37,"revenue":1969.52,"marketing_budget":4999.98,"3month_rolling_avg_ltv":60.26,"6month_rolling_avg_ltv":53.79,"9month_rolling_avg_ltv":53.79,"break_even_ftd_target":93.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":121,"total_ftd":33,"ftd_conversion_rate":27.27,"ltv":69.72,"cac":151.3,"ltv_cac_ratio":0.46,"total_ggr":5819.66,"total_ngr":6103.71,"total_deposits":12949.03,"total_withdrawals":6956.84,"total_bonus_cost":1390.86,"provider_fee":581.97,"payment_fee":418.02,"govt_tax":1222.13,"other_tax":29.1,"platform_fee":160.91,"revenue":2300.72,"marketing_budget":4992.92,"3month_rolling_avg_ltv":51.97,"6month_rolling_avg_ltv":55.91,"9month_rolling_avg_ltv":55.91,"break_even_ftd_target":90.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":1928,"total_ftd":195,"ftd_conversion_rate":10.11,"ltv":-1.74,"cac":24.54,"ltv_cac_ratio":null,"total_ggr":5855.63,"total_ngr":4697.68,"total_deposits":23869.91,"total_withdrawals":22539.12,"total_bonus_cost":2056.32,"provider_fee":585.56,"payment_fee":974.59,"govt_tax":1229.68,"other_tax":29.28,"platform_fee":161.91,"revenue":-339.66,"marketing_budget":4785.85,"3month_rolling_avg_ltv":4.16,"6month_rolling_avg_ltv":17.47,"9month_rolling_avg_ltv":31.32,"break_even_ftd_target":274.0,"recommendation":"Monitor"},{"registration_month_year":"2025-02","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":244,"total_ftd":47,"ftd_conversion_rate":19.26,"ltv":8.86,"cac":86.95,"ltv_cac_ratio":0.1,"total_ggr":2184.81,"total_ngr":1957.41,"total_deposits":5464.49,"total_withdrawals":4073.18,"total_bonus_cost":591.91,"provider_fee":218.48,"payment_fee":200.29,"govt_tax":458.81,"other_tax":10.92,"platform_fee":60.41,"revenue":416.59,"marketing_budget":4086.68,"3month_rolling_avg_ltv":43.28,"6month_rolling_avg_ltv":31.31,"9month_rolling_avg_ltv":28.94,"break_even_ftd_target":131.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":244,"total_ftd":82,"ftd_conversion_rate":33.61,"ltv":42.96,"cac":44.75,"ltv_cac_ratio":0.96,"total_ggr":12097.02,"total_ngr":11183.18,"total_deposits":33361.55,"total_withdrawals":38146.18,"total_bonus_cost":2013.88,"provider_fee":1209.7,"payment_fee":1501.66,"govt_tax":2540.37,"other_tax":60.49,"platform_fee":334.48,"revenue":3522.6,"marketing_budget":3669.9,"3month_rolling_avg_ltv":57.93,"6month_rolling_avg_ltv":66.72,"9month_rolling_avg_ltv":66.72,"break_even_ftd_target":56.0,"recommendation":"Monitor"},{"registration_month_year":"2025-02","traffic_source_group":"META","channel_type":"META","total_registrations":3987,"total_ftd":922,"ftd_conversion_rate":23.13,"ltv":17.92,"cac":72.85,"ltv_cac_ratio":0.25,"total_ggr":67753.26,"total_ngr":61663.58,"total_deposits":159684.34,"total_withdrawals":132440.04,"total_bonus_cost":15788.01,"provider_fee":6775.33,"payment_fee":6134.61,"govt_tax":14228.18,"other_tax":338.77,"platform_fee":1873.38,"revenue":16525.31,"marketing_budget":67163.1,"3month_rolling_avg_ltv":16.72,"6month_rolling_avg_ltv":20.99,"9month_rolling_avg_ltv":26.94,"break_even_ftd_target":3200.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-02","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":2720,"total_ftd":1064,"ftd_conversion_rate":39.12,"ltv":38.77,"cac":34.48,"ltv_cac_ratio":1.12,"total_ggr":180357.42,"total_ngr":165574.08,"total_deposits":596825.71,"total_withdrawals":472170.56,"total_bonus_cost":40074.1,"provider_fee":18035.74,"payment_fee":22448.92,"govt_tax":37875.06,"other_tax":901.79,"platform_fee":4986.88,"revenue":41251.59,"marketing_budget":36683.6,"3month_rolling_avg_ltv":32.76,"6month_rolling_avg_ltv":29.77,"9month_rolling_avg_ltv":29.54,"break_even_ftd_target":1233.0,"recommendation":"Monitor"},{"registration_month_year":"2025-02","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":3122,"total_ftd":982,"ftd_conversion_rate":31.45,"ltv":37.97,"cac":95.67,"ltv_cac_ratio":0.4,"total_ggr":112368.16,"total_ngr":106099.44,"total_deposits":295999.02,"total_withdrawals":205663.7,"total_bonus_cost":19775.11,"provider_fee":11236.82,"payment_fee":10534.92,"govt_tax":23597.31,"other_tax":561.84,"platform_fee":3106.98,"revenue":37286.46,"marketing_budget":93943.6,"3month_rolling_avg_ltv":48.03,"6month_rolling_avg_ltv":44.99,"9month_rolling_avg_ltv":44.99,"break_even_ftd_target":2088.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":4176,"total_ftd":665,"ftd_conversion_rate":15.92,"ltv":35.76,"cac":65.48,"ltv_cac_ratio":0.55,"total_ggr":71509.67,"total_ngr":67437.65,"total_deposits":177753.93,"total_withdrawals":114812.75,"total_bonus_cost":13010.41,"provider_fee":7150.97,"payment_fee":6143.9,"govt_tax":15017.03,"other_tax":357.55,"platform_fee":1977.24,"revenue":23780.56,"marketing_budget":43545.36,"3month_rolling_avg_ltv":38.38,"6month_rolling_avg_ltv":34.31,"9month_rolling_avg_ltv":34.31,"break_even_ftd_target":1270.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":3556,"total_ftd":455,"ftd_conversion_rate":12.8,"ltv":13.18,"cac":22.11,"ltv_cac_ratio":0.6,"total_ggr":30129.77,"total_ngr":31525.63,"total_deposits":69055.56,"total_withdrawals":50634.9,"total_bonus_cost":12689.51,"provider_fee":3012.98,"payment_fee":2513.5,"govt_tax":6327.25,"other_tax":150.65,"platform_fee":833.09,"revenue":5998.65,"marketing_budget":10059.23,"3month_rolling_avg_ltv":22.61,"6month_rolling_avg_ltv":22.61,"9month_rolling_avg_ltv":22.61,"break_even_ftd_target":445.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":170,"total_ftd":42,"ftd_conversion_rate":24.71,"ltv":35.91,"cac":134.03,"ltv_cac_ratio":0.27,"total_ggr":6230.5,"total_ngr":5964.9,"total_deposits":13574.74,"total_withdrawals":7079.6,"total_bonus_cost":1888.08,"provider_fee":623.05,"payment_fee":433.74,"govt_tax":1308.4,"other_tax":31.15,"platform_fee":172.27,"revenue":1508.2,"marketing_budget":5629.15,"3month_rolling_avg_ltv":63.19,"6month_rolling_avg_ltv":59.92,"9month_rolling_avg_ltv":59.92,"break_even_ftd_target":94.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":393,"total_ftd":88,"ftd_conversion_rate":22.39,"ltv":54.15,"cac":41.67,"ltv_cac_ratio":1.3,"total_ggr":12040.19,"total_ngr":10639.92,"total_deposits":33368.45,"total_withdrawals":22667.73,"total_bonus_cost":572.2,"provider_fee":1204.02,"payment_fee":1176.76,"govt_tax":2528.44,"other_tax":60.2,"platform_fee":332.91,"revenue":4765.38,"marketing_budget":3667.0,"3month_rolling_avg_ltv":33.78,"6month_rolling_avg_ltv":28.69,"9month_rolling_avg_ltv":28.69,"break_even_ftd_target":128.0,"recommendation":"Monitor"},{"registration_month_year":"2025-01","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":228,"total_ftd":54,"ftd_conversion_rate":23.68,"ltv":31.91,"cac":52.21,"ltv_cac_ratio":0.61,"total_ggr":4085.28,"total_ngr":3912.65,"total_deposits":11839.32,"total_withdrawals":8928.24,"total_bonus_cost":353.31,"provider_fee":408.53,"payment_fee":436.12,"govt_tax":857.91,"other_tax":20.43,"platform_fee":112.96,"revenue":1723.4,"marketing_budget":2819.57,"3month_rolling_avg_ltv":65.19,"6month_rolling_avg_ltv":59.25,"9month_rolling_avg_ltv":59.25,"break_even_ftd_target":48.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":478,"total_ftd":128,"ftd_conversion_rate":26.78,"ltv":36.61,"cac":13.5,"ltv_cac_ratio":2.71,"total_ggr":21497.71,"total_ngr":21160.78,"total_deposits":58726.84,"total_withdrawals":40470.99,"total_bonus_cost":7025.76,"provider_fee":2149.77,"payment_fee":2083.15,"govt_tax":4514.52,"other_tax":107.49,"platform_fee":594.41,"revenue":4685.68,"marketing_budget":1727.75,"3month_rolling_avg_ltv":73.86,"6month_rolling_avg_ltv":74.25,"9month_rolling_avg_ltv":74.25,"break_even_ftd_target":24.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-01","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":311,"total_ftd":66,"ftd_conversion_rate":21.22,"ltv":41.95,"cac":19.16,"ltv_cac_ratio":2.19,"total_ggr":6468.37,"total_ngr":6440.77,"total_deposits":11000.57,"total_withdrawals":7132.71,"total_bonus_cost":1075.22,"provider_fee":646.84,"payment_fee":380.8,"govt_tax":1358.36,"other_tax":32.34,"platform_fee":178.85,"revenue":2768.37,"marketing_budget":1264.23,"3month_rolling_avg_ltv":27.97,"6month_rolling_avg_ltv":26.77,"9month_rolling_avg_ltv":26.77,"break_even_ftd_target":48.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-01","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":2011,"total_ftd":250,"ftd_conversion_rate":12.43,"ltv":14.56,"cac":5.06,"ltv_cac_ratio":2.88,"total_ggr":16514.15,"total_ngr":16608.64,"total_deposits":49795.44,"total_withdrawals":36993.43,"total_bonus_cost":5487.44,"provider_fee":1651.41,"payment_fee":1822.57,"govt_tax":3467.97,"other_tax":82.57,"platform_fee":456.62,"revenue":3640.06,"marketing_budget":1264.23,"3month_rolling_avg_ltv":9.15,"6month_rolling_avg_ltv":34.11,"9month_rolling_avg_ltv":34.11,"break_even_ftd_target":38.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-01","traffic_source_group":"META","channel_type":"META","total_registrations":5979,"total_ftd":1319,"ftd_conversion_rate":22.06,"ltv":17.58,"cac":54.42,"ltv_cac_ratio":0.32,"total_ggr":109844.62,"total_ngr":100885.18,"total_deposits":303612.69,"total_withdrawals":184875.93,"total_bonus_cost":29800.59,"provider_fee":10984.46,"payment_fee":10258.26,"govt_tax":23067.37,"other_tax":549.22,"platform_fee":3037.2,"revenue":23188.07,"marketing_budget":71780.81,"3month_rolling_avg_ltv":20.78,"6month_rolling_avg_ltv":28.5,"9month_rolling_avg_ltv":28.5,"break_even_ftd_target":2519.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2025-01","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":3426,"total_ftd":1216,"ftd_conversion_rate":35.49,"ltv":35.09,"cac":19.01,"ltv_cac_ratio":1.85,"total_ggr":211926.69,"total_ngr":190869.56,"total_deposits":766471.92,"total_withdrawals":774412.05,"total_bonus_cost":43227.22,"provider_fee":21192.67,"payment_fee":32358.56,"govt_tax":44504.6,"other_tax":1059.63,"platform_fee":5859.77,"revenue":42667.1,"marketing_budget":23113.88,"3month_rolling_avg_ltv":31.95,"6month_rolling_avg_ltv":28.04,"9month_rolling_avg_ltv":25.65,"break_even_ftd_target":825.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2025-01","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":3403,"total_ftd":1039,"ftd_conversion_rate":30.53,"ltv":51.23,"cac":76.99,"ltv_cac_ratio":0.67,"total_ggr":161495.19,"total_ngr":152410.24,"total_deposits":371753.66,"total_withdrawals":234269.57,"total_bonus_cost":31124.44,"provider_fee":16149.52,"payment_fee":12726.49,"govt_tax":33913.99,"other_tax":807.48,"platform_fee":4465.34,"revenue":53222.98,"marketing_budget":79992.72,"3month_rolling_avg_ltv":47.29,"6month_rolling_avg_ltv":43.43,"9month_rolling_avg_ltv":43.43,"break_even_ftd_target":1842.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-12","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":5114,"total_ftd":1011,"ftd_conversion_rate":19.77,"ltv":44.13,"cac":40.49,"ltv_cac_ratio":1.09,"total_ggr":134684.18,"total_ngr":126796.53,"total_deposits":299680.18,"total_withdrawals":189758.14,"total_bonus_cost":25752.91,"provider_fee":13468.42,"payment_fee":10278.2,"govt_tax":28283.68,"other_tax":673.42,"platform_fee":3724.02,"revenue":44615.89,"marketing_budget":40930.55,"3month_rolling_avg_ltv":35.07,"6month_rolling_avg_ltv":31.85,"9month_rolling_avg_ltv":31.85,"break_even_ftd_target":1286.0,"recommendation":"Monitor"},{"registration_month_year":"2024-12","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":427,"total_ftd":183,"ftd_conversion_rate":42.86,"ltv":72.97,"cac":59.59,"ltv_cac_ratio":1.22,"total_ggr":40649.19,"total_ngr":34912.57,"total_deposits":92744.6,"total_withdrawals":70594.49,"total_bonus_cost":4201.38,"provider_fee":4064.92,"payment_fee":3430.12,"govt_tax":8536.33,"other_tax":203.25,"platform_fee":1123.95,"revenue":13352.62,"marketing_budget":10904.48,"3month_rolling_avg_ltv":74.67,"6month_rolling_avg_ltv":74.67,"9month_rolling_avg_ltv":74.67,"break_even_ftd_target":147.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":565,"total_ftd":155,"ftd_conversion_rate":27.43,"ltv":17.37,"cac":53.24,"ltv_cac_ratio":0.33,"total_ggr":18152.08,"total_ngr":17918.41,"total_deposits":48006.28,"total_withdrawals":35556.82,"total_bonus_cost":7250.82,"provider_fee":1815.21,"payment_fee":1754.83,"govt_tax":3811.94,"other_tax":90.76,"platform_fee":501.91,"revenue":2692.95,"marketing_budget":8252.52,"3month_rolling_avg_ltv":35.18,"6month_rolling_avg_ltv":31.51,"9month_rolling_avg_ltv":31.51,"break_even_ftd_target":262.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-12","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":2808,"total_ftd":531,"ftd_conversion_rate":18.91,"ltv":19.86,"cac":15.29,"ltv_cac_ratio":1.3,"total_ggr":51288.32,"total_ngr":43233.06,"total_deposits":98978.48,"total_withdrawals":90676.98,"total_bonus_cost":11128.61,"provider_fee":5128.83,"payment_fee":3982.76,"govt_tax":10770.55,"other_tax":256.44,"platform_fee":1418.12,"revenue":10547.74,"marketing_budget":8120.91,"3month_rolling_avg_ltv":23.98,"6month_rolling_avg_ltv":23.98,"9month_rolling_avg_ltv":23.98,"break_even_ftd_target":339.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":282,"total_ftd":77,"ftd_conversion_rate":27.3,"ltv":82.43,"cac":46.97,"ltv_cac_ratio":1.75,"total_ggr":16999.92,"total_ngr":15543.77,"total_deposits":36435.03,"total_withdrawals":17610.33,"total_bonus_cost":2236.83,"provider_fee":1699.99,"payment_fee":1134.95,"govt_tax":3569.98,"other_tax":85.0,"platform_fee":470.05,"revenue":6346.96,"marketing_budget":3616.89,"3month_rolling_avg_ltv":51.53,"6month_rolling_avg_ltv":51.53,"9month_rolling_avg_ltv":51.53,"break_even_ftd_target":71.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":321,"total_ftd":99,"ftd_conversion_rate":30.84,"ltv":49.45,"cac":11.32,"ltv_cac_ratio":4.37,"total_ggr":12738.03,"total_ngr":10870.94,"total_deposits":22152.6,"total_withdrawals":12378.83,"total_bonus_cost":885.21,"provider_fee":1273.8,"payment_fee":725.16,"govt_tax":2674.99,"other_tax":63.69,"platform_fee":352.21,"revenue":4895.88,"marketing_budget":1120.91,"3month_rolling_avg_ltv":21.3,"6month_rolling_avg_ltv":22.23,"9month_rolling_avg_ltv":22.23,"break_even_ftd_target":51.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":2246,"total_ftd":307,"ftd_conversion_rate":13.67,"ltv":0.36,"cac":3.65,"ltv_cac_ratio":0.1,"total_ggr":18364.29,"total_ngr":16927.54,"total_deposits":40366.51,"total_withdrawals":35052.94,"total_bonus_cost":8940.34,"provider_fee":1836.43,"payment_fee":1583.81,"govt_tax":3856.5,"other_tax":91.82,"platform_fee":507.77,"revenue":110.86,"marketing_budget":1120.91,"3month_rolling_avg_ltv":17.04,"6month_rolling_avg_ltv":40.86,"9month_rolling_avg_ltv":40.86,"break_even_ftd_target":28.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-12","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":206,"total_ftd":49,"ftd_conversion_rate":23.79,"ltv":66.27,"cac":22.88,"ltv_cac_ratio":2.9,"total_ggr":6995.54,"total_ngr":6442.66,"total_deposits":10076.71,"total_withdrawals":2130.36,"total_bonus_cost":542.04,"provider_fee":699.55,"payment_fee":256.35,"govt_tax":1469.06,"other_tax":34.98,"platform_fee":193.43,"revenue":3247.25,"marketing_budget":1120.91,"3month_rolling_avg_ltv":58.17,"6month_rolling_avg_ltv":58.33,"9month_rolling_avg_ltv":58.33,"break_even_ftd_target":20.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"META","channel_type":"META","total_registrations":6018,"total_ftd":1592,"ftd_conversion_rate":26.45,"ltv":12.07,"cac":46.71,"ltv_cac_ratio":0.26,"total_ggr":135691.55,"total_ngr":126616.46,"total_deposits":425089.6,"total_withdrawals":362645.86,"total_bonus_cost":44368.58,"provider_fee":13569.16,"payment_fee":16542.44,"govt_tax":28495.23,"other_tax":678.46,"platform_fee":3751.87,"revenue":19210.72,"marketing_budget":74355.16,"3month_rolling_avg_ltv":25.43,"6month_rolling_avg_ltv":31.79,"9month_rolling_avg_ltv":31.79,"break_even_ftd_target":2339.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-12","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":4478,"total_ftd":1694,"ftd_conversion_rate":37.83,"ltv":38.69,"cac":25.36,"ltv_cac_ratio":1.53,"total_ggr":314780.29,"total_ngr":286955.13,"total_deposits":860548.52,"total_withdrawals":676772.2,"total_bonus_cost":81276.23,"provider_fee":31478.03,"payment_fee":32283.74,"govt_tax":66103.86,"other_tax":1573.9,"platform_fee":8703.68,"revenue":65535.7,"marketing_budget":42967.29,"3month_rolling_avg_ltv":27.48,"6month_rolling_avg_ltv":32.32,"9month_rolling_avg_ltv":24.02,"break_even_ftd_target":1330.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-12","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":3281,"total_ftd":1128,"ftd_conversion_rate":34.38,"ltv":46.37,"cac":73.42,"ltv_cac_ratio":0.63,"total_ggr":191462.25,"total_ngr":173017.77,"total_deposits":527575.24,"total_withdrawals":402093.09,"total_bonus_cost":35587.17,"provider_fee":19146.23,"payment_fee":19523.04,"govt_tax":40207.07,"other_tax":957.31,"platform_fee":5293.93,"revenue":52303.03,"marketing_budget":82820.49,"3month_rolling_avg_ltv":42.46,"6month_rolling_avg_ltv":42.46,"9month_rolling_avg_ltv":42.46,"break_even_ftd_target":1951.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-11","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":6413,"total_ftd":1298,"ftd_conversion_rate":20.24,"ltv":34.3,"cac":31.47,"ltv_cac_ratio":1.09,"total_ggr":164013.58,"total_ngr":149983.83,"total_deposits":394701.85,"total_withdrawals":277570.62,"total_bonus_cost":35151.37,"provider_fee":16401.36,"payment_fee":14117.72,"govt_tax":34442.85,"other_tax":820.07,"platform_fee":4534.98,"revenue":44515.49,"marketing_budget":40849.82,"3month_rolling_avg_ltv":31.03,"6month_rolling_avg_ltv":31.03,"9month_rolling_avg_ltv":31.03,"break_even_ftd_target":1317.0,"recommendation":"Monitor"},{"registration_month_year":"2024-11","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":443,"total_ftd":241,"ftd_conversion_rate":54.4,"ltv":64.22,"cac":57.14,"ltv_cac_ratio":1.12,"total_ggr":51225.7,"total_ngr":45644.72,"total_deposits":138015.25,"total_withdrawals":86803.29,"total_bonus_cost":7894.66,"provider_fee":5122.57,"payment_fee":4721.19,"govt_tax":10757.4,"other_tax":256.13,"platform_fee":1416.39,"revenue":15476.38,"marketing_budget":13770.1,"3month_rolling_avg_ltv":79.9,"6month_rolling_avg_ltv":79.9,"9month_rolling_avg_ltv":79.9,"break_even_ftd_target":173.0,"recommendation":"Monitor"},{"registration_month_year":"2024-11","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":271,"total_ftd":117,"ftd_conversion_rate":43.17,"ltv":66.45,"cac":102.87,"ltv_cac_ratio":0.65,"total_ggr":23725.64,"total_ngr":23168.84,"total_deposits":61028.56,"total_withdrawals":22713.42,"total_bonus_cost":5506.05,"provider_fee":2372.56,"payment_fee":1758.58,"govt_tax":4982.38,"other_tax":118.63,"platform_fee":656.01,"revenue":7774.62,"marketing_budget":12036.12,"3month_rolling_avg_ltv":44.07,"6month_rolling_avg_ltv":44.07,"9month_rolling_avg_ltv":44.07,"break_even_ftd_target":274.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-11","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":2905,"total_ftd":541,"ftd_conversion_rate":18.62,"ltv":22.87,"cac":15.86,"ltv_cac_ratio":1.44,"total_ggr":68263.51,"total_ngr":59931.08,"total_deposits":164142.76,"total_withdrawals":115642.23,"total_bonus_cost":18291.61,"provider_fee":6826.35,"payment_fee":5875.48,"govt_tax":14335.34,"other_tax":341.32,"platform_fee":1887.49,"revenue":12373.5,"marketing_budget":8579.18,"3month_rolling_avg_ltv":25.09,"6month_rolling_avg_ltv":25.09,"9month_rolling_avg_ltv":25.09,"break_even_ftd_target":342.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-11","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":252,"total_ftd":85,"ftd_conversion_rate":33.73,"ltv":53.74,"cac":64.47,"ltv_cac_ratio":0.83,"total_ggr":12122.31,"total_ngr":11215.64,"total_deposits":30653.64,"total_withdrawals":20882.91,"total_bonus_cost":1411.78,"provider_fee":1212.23,"payment_fee":1082.27,"govt_tax":2545.69,"other_tax":60.61,"platform_fee":335.18,"revenue":4567.88,"marketing_budget":5479.56,"3month_rolling_avg_ltv":59.86,"6month_rolling_avg_ltv":59.86,"9month_rolling_avg_ltv":59.86,"break_even_ftd_target":92.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-11","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":228,"total_ftd":41,"ftd_conversion_rate":17.98,"ltv":0.41,"cac":54.86,"ltv_cac_ratio":0.01,"total_ggr":5299.53,"total_ngr":4525.72,"total_deposits":12564.31,"total_withdrawals":9324.26,"total_bonus_cost":2233.52,"provider_fee":529.95,"payment_fee":459.66,"govt_tax":1112.9,"other_tax":26.5,"platform_fee":146.53,"revenue":16.65,"marketing_budget":2249.35,"3month_rolling_avg_ltv":41.88,"6month_rolling_avg_ltv":41.88,"9month_rolling_avg_ltv":41.88,"break_even_ftd_target":54.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-11","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":268,"total_ftd":53,"ftd_conversion_rate":19.78,"ltv":38.44,"cac":19.63,"ltv_cac_ratio":1.96,"total_ggr":6691.57,"total_ngr":6123.15,"total_deposits":16140.84,"total_withdrawals":8981.55,"total_bonus_cost":1265.36,"provider_fee":669.16,"payment_fee":527.57,"govt_tax":1405.23,"other_tax":33.46,"platform_fee":185.02,"revenue":2037.36,"marketing_budget":1040.18,"3month_rolling_avg_ltv":19.35,"6month_rolling_avg_ltv":18.18,"9month_rolling_avg_ltv":18.18,"break_even_ftd_target":58.0,"recommendation":"Monitor"},{"registration_month_year":"2024-11","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":3794,"total_ftd":546,"ftd_conversion_rate":14.39,"ltv":-2.43,"cac":1.91,"ltv_cac_ratio":null,"total_ggr":30946.8,"total_ngr":29610.38,"total_deposits":68639.42,"total_withdrawals":74724.51,"total_bonus_cost":17321.08,"provider_fee":3094.68,"payment_fee":3010.64,"govt_tax":6498.83,"other_tax":154.73,"platform_fee":855.68,"revenue":-1325.26,"marketing_budget":1040.18,"3month_rolling_avg_ltv":30.77,"6month_rolling_avg_ltv":51.68,"9month_rolling_avg_ltv":51.68,"break_even_ftd_target":21.0,"recommendation":"Monitor"},{"registration_month_year":"2024-11","traffic_source_group":"META","channel_type":"META","total_registrations":5561,"total_ftd":1509,"ftd_conversion_rate":27.14,"ltv":20.52,"cac":41.9,"ltv_cac_ratio":0.49,"total_ggr":144803.41,"total_ngr":128213.09,"total_deposits":326779.35,"total_withdrawals":248347.19,"total_bonus_cost":35552.23,"provider_fee":14480.34,"payment_fee":12077.66,"govt_tax":30408.72,"other_tax":724.02,"platform_fee":4003.81,"revenue":30966.31,"marketing_budget":63223.62,"3month_rolling_avg_ltv":25.26,"6month_rolling_avg_ltv":34.61,"9month_rolling_avg_ltv":34.61,"break_even_ftd_target":1827.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-11","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":3859,"total_ftd":1549,"ftd_conversion_rate":40.14,"ltv":24.5,"cac":5.37,"ltv_cac_ratio":4.56,"total_ggr":340435.13,"total_ngr":293143.37,"total_deposits":919554.22,"total_withdrawals":697571.75,"total_bonus_cost":104584.26,"provider_fee":34043.51,"payment_fee":33959.65,"govt_tax":71491.38,"other_tax":1702.18,"platform_fee":9413.03,"revenue":37949.36,"marketing_budget":8321.4,"3month_rolling_avg_ltv":26.78,"6month_rolling_avg_ltv":27.94,"9month_rolling_avg_ltv":23.95,"break_even_ftd_target":298.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-11","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":3250,"total_ftd":1244,"ftd_conversion_rate":38.28,"ltv":46.51,"cac":70.92,"ltv_cac_ratio":0.66,"total_ggr":220178.59,"total_ngr":199249.92,"total_deposits":517154.47,"total_withdrawals":379204.02,"total_bonus_cost":47123.6,"provider_fee":22017.86,"payment_fee":18823.53,"govt_tax":46237.5,"other_tax":1100.89,"platform_fee":6087.94,"revenue":57858.59,"marketing_budget":88226.95,"3month_rolling_avg_ltv":40.43,"6month_rolling_avg_ltv":40.43,"9month_rolling_avg_ltv":40.43,"break_even_ftd_target":2183.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-10","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":7725,"total_ftd":1773,"ftd_conversion_rate":22.95,"ltv":36.71,"cac":25.94,"ltv_cac_ratio":1.42,"total_ggr":220928.48,"total_ngr":211304.12,"total_deposits":569683.47,"total_withdrawals":335114.51,"total_bonus_cost":51510.72,"provider_fee":22092.85,"payment_fee":19000.76,"govt_tax":46394.98,"other_tax":1104.64,"platform_fee":6108.67,"revenue":65091.5,"marketing_budget":45993.74,"3month_rolling_avg_ltv":28.2,"6month_rolling_avg_ltv":28.2,"9month_rolling_avg_ltv":28.2,"break_even_ftd_target":1632.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-10","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":299,"total_ftd":163,"ftd_conversion_rate":54.52,"ltv":69.55,"cac":64.25,"ltv_cac_ratio":1.08,"total_ggr":36411.88,"total_ngr":31964.39,"total_deposits":65709.79,"total_withdrawals":30197.08,"total_bonus_cost":6137.46,"provider_fee":3641.19,"payment_fee":2014.04,"govt_tax":7646.49,"other_tax":182.06,"platform_fee":1006.79,"revenue":11336.35,"marketing_budget":10473.13,"3month_rolling_avg_ltv":55.01,"6month_rolling_avg_ltv":55.01,"9month_rolling_avg_ltv":55.01,"break_even_ftd_target":191.0,"recommendation":"Monitor"},{"registration_month_year":"2024-10","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":315,"total_ftd":184,"ftd_conversion_rate":58.41,"ltv":46.7,"cac":52.98,"ltv_cac_ratio":0.88,"total_ggr":41774.1,"total_ngr":38805.49,"total_deposits":102200.61,"total_withdrawals":50272.45,"total_bonus_cost":12697.51,"provider_fee":4177.41,"payment_fee":3201.93,"govt_tax":8772.56,"other_tax":208.87,"platform_fee":1155.05,"revenue":8592.15,"marketing_budget":9748.32,"3month_rolling_avg_ltv":41.44,"6month_rolling_avg_ltv":41.44,"9month_rolling_avg_ltv":41.44,"break_even_ftd_target":236.0,"recommendation":"Monitor"},{"registration_month_year":"2024-10","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":358,"total_ftd":263,"ftd_conversion_rate":73.46,"ltv":84.39,"cac":28.6,"ltv_cac_ratio":2.95,"total_ggr":66845.17,"total_ngr":57720.15,"total_deposits":138099.94,"total_withdrawals":88322.85,"total_bonus_cost":7865.03,"provider_fee":6684.52,"payment_fee":4754.88,"govt_tax":14037.49,"other_tax":334.23,"platform_fee":1848.27,"revenue":22195.74,"marketing_budget":7520.93,"3month_rolling_avg_ltv":75.41,"6month_rolling_avg_ltv":75.41,"9month_rolling_avg_ltv":75.41,"break_even_ftd_target":100.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-10","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":155,"total_ftd":29,"ftd_conversion_rate":18.71,"ltv":-3.98,"cac":222.83,"ltv_cac_ratio":null,"total_ggr":2974.81,"total_ngr":2531.43,"total_deposits":4813.7,"total_withdrawals":3844.91,"total_bonus_cost":1445.59,"provider_fee":297.48,"payment_fee":181.83,"govt_tax":624.71,"other_tax":14.87,"platform_fee":82.25,"revenue":-115.31,"marketing_budget":6462.13,"3month_rolling_avg_ltv":25.57,"6month_rolling_avg_ltv":25.57,"9month_rolling_avg_ltv":25.57,"break_even_ftd_target":253.0,"recommendation":"Monitor"},{"registration_month_year":"2024-10","traffic_source_group":"MediaSky","channel_type":"Affiliate","total_registrations":1258,"total_ftd":388,"ftd_conversion_rate":30.84,"ltv":25.09,"cac":9.52,"ltv_cac_ratio":2.64,"total_ggr":63007.38,"total_ngr":53719.28,"total_deposits":172643.63,"total_withdrawals":132166.75,"total_bonus_cost":15993.09,"provider_fee":6300.74,"payment_fee":6401.02,"govt_tax":13231.55,"other_tax":315.04,"platform_fee":1742.15,"revenue":9735.69,"marketing_budget":3691.95,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":369195.0,"recommendation":"Monitor"},{"registration_month_year":"2024-10","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":180,"total_ftd":55,"ftd_conversion_rate":30.56,"ltv":83.55,"cac":26.58,"ltv_cac_ratio":3.14,"total_ggr":12459.09,"total_ngr":11773.99,"total_deposits":19515.92,"total_withdrawals":7527.45,"total_bonus_cost":2341.74,"provider_fee":1245.91,"payment_fee":567.91,"govt_tax":2616.41,"other_tax":62.3,"platform_fee":344.49,"revenue":4595.23,"marketing_budget":1462.13,"3month_rolling_avg_ltv":21.05,"6month_rolling_avg_ltv":21.05,"9month_rolling_avg_ltv":21.05,"break_even_ftd_target":70.0,"recommendation":"Monitor"},{"registration_month_year":"2024-10","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":2249,"total_ftd":559,"ftd_conversion_rate":24.86,"ltv":29.52,"cac":2.62,"ltv_cac_ratio":11.28,"total_ggr":64761.38,"total_ngr":59508.11,"total_deposits":119829.05,"total_withdrawals":81070.76,"total_bonus_cost":16598.83,"provider_fee":6476.14,"payment_fee":4218.9,"govt_tax":13599.89,"other_tax":323.81,"platform_fee":1790.65,"revenue":16499.9,"marketing_budget":1462.13,"3month_rolling_avg_ltv":59.07,"6month_rolling_avg_ltv":59.07,"9month_rolling_avg_ltv":59.07,"break_even_ftd_target":25.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-10","traffic_source_group":"META","channel_type":"META","total_registrations":2743,"total_ftd":850,"ftd_conversion_rate":30.99,"ltv":29.76,"cac":54.81,"ltv_cac_ratio":0.54,"total_ggr":93136.18,"total_ngr":84778.09,"total_deposits":194808.31,"total_withdrawals":139689.38,"total_bonus_cost":20541.4,"provider_fee":9313.62,"payment_fee":7024.45,"govt_tax":19558.6,"other_tax":465.68,"platform_fee":2575.22,"revenue":25299.13,"marketing_budget":46591.21,"3month_rolling_avg_ltv":36.22,"6month_rolling_avg_ltv":36.22,"9month_rolling_avg_ltv":36.22,"break_even_ftd_target":1287.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-10","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":10337,"total_ftd":3081,"ftd_conversion_rate":29.81,"ltv":32.66,"cac":3.8,"ltv_cac_ratio":8.6,"total_ggr":581414.65,"total_ngr":513791.17,"total_deposits":1544920.3999999999,"total_withdrawals":1110746.02,"total_bonus_cost":158170.3,"provider_fee":58141.46,"payment_fee":55768.99,"govt_tax":122097.08,"other_tax":2907.07,"platform_fee":16076.12,"revenue":100630.15,"marketing_budget":11697.03,"3month_rolling_avg_ltv":24.13,"6month_rolling_avg_ltv":22.49,"9month_rolling_avg_ltv":22.49,"break_even_ftd_target":521.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-10","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":1924,"total_ftd":800,"ftd_conversion_rate":41.58,"ltv":48.99,"cac":57.01,"ltv_cac_ratio":0.86,"total_ggr":133097.94,"total_ngr":121663.24,"total_deposits":328005.02,"total_withdrawals":233438.71,"total_bonus_cost":25077.3,"provider_fee":13309.79,"payment_fee":11790.32,"govt_tax":27950.57,"other_tax":665.49,"platform_fee":3680.16,"revenue":39189.61,"marketing_budget":45606.66,"3month_rolling_avg_ltv":31.87,"6month_rolling_avg_ltv":31.87,"9month_rolling_avg_ltv":31.87,"break_even_ftd_target":1431.0,"recommendation":"Monitor"},{"registration_month_year":"2024-09","traffic_source_group":"BettingPro","channel_type":"Affiliate","total_registrations":10945,"total_ftd":3032,"ftd_conversion_rate":27.7,"ltv":34.21,"cac":11.41,"ltv_cac_ratio":3.0,"total_ggr":384873.92,"total_ngr":357904.78,"total_deposits":896667.15,"total_withdrawals":616102.99,"total_bonus_cost":90535.23,"provider_fee":38487.39,"payment_fee":31768.17,"govt_tax":80823.52,"other_tax":1924.37,"platform_fee":10641.76,"revenue":103724.33,"marketing_budget":34602.92,"3month_rolling_avg_ltv":22.18,"6month_rolling_avg_ltv":22.18,"9month_rolling_avg_ltv":22.18,"break_even_ftd_target":1560.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":2610,"total_ftd":735,"ftd_conversion_rate":28.16,"ltv":24.03,"cac":13.55,"ltv_cac_ratio":1.77,"total_ggr":93568.14,"total_ngr":84972.87,"total_deposits":200993.06,"total_withdrawals":170490.06,"total_bonus_cost":27451.42,"provider_fee":9356.81,"payment_fee":7801.15,"govt_tax":19649.31,"other_tax":467.84,"platform_fee":2587.16,"revenue":17659.18,"marketing_budget":9962.05,"3month_rolling_avg_ltv":76.59,"6month_rolling_avg_ltv":76.59,"9month_rolling_avg_ltv":76.59,"break_even_ftd_target":131.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":719,"total_ftd":400,"ftd_conversion_rate":55.63,"ltv":51.23,"cac":20.01,"ltv_cac_ratio":2.56,"total_ggr":65818.43,"total_ngr":56844.98,"total_deposits":152777.64,"total_withdrawals":96332.32,"total_bonus_cost":8568.68,"provider_fee":6581.84,"payment_fee":5231.31,"govt_tax":13821.87,"other_tax":329.09,"platform_fee":1819.88,"revenue":20492.3,"marketing_budget":8003.24,"3month_rolling_avg_ltv":58.79,"6month_rolling_avg_ltv":58.79,"9month_rolling_avg_ltv":58.79,"break_even_ftd_target":137.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"BCPRX24","channel_type":"Affiliate","total_registrations":301,"total_ftd":215,"ftd_conversion_rate":71.43,"ltv":75.41,"cac":29.41,"ltv_cac_ratio":2.56,"total_ggr":38820.02,"total_ngr":36561.05,"total_deposits":90814.55,"total_withdrawals":52098.97,"total_bonus_cost":4045.77,"provider_fee":3882.0,"payment_fee":3001.18,"govt_tax":8152.2,"other_tax":194.1,"platform_fee":1073.37,"revenue":16212.42,"marketing_budget":6323.18,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":632318.0,"recommendation":"Monitor"},{"registration_month_year":"2024-09","traffic_source_group":"Bezded","channel_type":"Affiliate","total_registrations":397,"total_ftd":262,"ftd_conversion_rate":65.99,"ltv":41.44,"cac":19.39,"ltv_cac_ratio":2.14,"total_ggr":59348.08,"total_ngr":54442.96,"total_deposits":133141.6,"total_withdrawals":134558.08,"total_bonus_cost":17628.73,"provider_fee":5934.81,"payment_fee":5621.69,"govt_tax":12463.1,"other_tax":296.74,"platform_fee":1640.97,"revenue":10856.91,"marketing_budget":5079.24,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":507924.0,"recommendation":"Monitor"},{"registration_month_year":"2024-09","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":574,"total_ftd":229,"ftd_conversion_rate":39.9,"ltv":21.57,"cac":9.08,"ltv_cac_ratio":2.38,"total_ggr":25805.98,"total_ngr":20271.79,"total_deposits":56875.4,"total_withdrawals":38415.23,"total_bonus_cost":4488.01,"provider_fee":2580.6,"payment_fee":2001.1,"govt_tax":5419.26,"other_tax":129.03,"platform_fee":713.54,"revenue":4940.26,"marketing_budget":2079.24,"3month_rolling_avg_ltv":20.53,"6month_rolling_avg_ltv":20.53,"9month_rolling_avg_ltv":20.53,"break_even_ftd_target":102.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":445,"total_ftd":136,"ftd_conversion_rate":30.56,"ltv":29.42,"cac":15.29,"ltv_cac_ratio":1.92,"total_ggr":14087.32,"total_ngr":12690.38,"total_deposits":20634.41,"total_withdrawals":10106.86,"total_bonus_cost":3216.53,"provider_fee":1408.73,"payment_fee":645.57,"govt_tax":2958.34,"other_tax":70.44,"platform_fee":389.51,"revenue":4001.26,"marketing_budget":2079.24,"3month_rolling_avg_ltv":23.64,"6month_rolling_avg_ltv":23.64,"9month_rolling_avg_ltv":23.64,"break_even_ftd_target":88.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"META","channel_type":"META","total_registrations":4974,"total_ftd":1522,"ftd_conversion_rate":30.6,"ltv":26.01,"cac":33.2,"ltv_cac_ratio":0.78,"total_ggr":162859.08,"total_ngr":142846.89,"total_deposits":347725.72,"total_withdrawals":245805.24,"total_bonus_cost":34988.91,"provider_fee":16285.91,"payment_fee":12464.15,"govt_tax":34200.41,"other_tax":814.3,"platform_fee":4503.05,"revenue":39590.16,"marketing_budget":50528.69,"3month_rolling_avg_ltv":41.33,"6month_rolling_avg_ltv":41.33,"9month_rolling_avg_ltv":41.33,"break_even_ftd_target":1223.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-09","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":19463,"total_ftd":5510,"ftd_conversion_rate":28.31,"ltv":25.27,"cac":2.64,"ltv_cac_ratio":9.57,"total_ggr":873832.9,"total_ngr":775807.52,"total_deposits":2251699.3500000001,"total_withdrawals":1765735.5800000001,"total_bonus_cost":252761.17,"provider_fee":87383.29,"payment_fee":84366.13,"govt_tax":183504.91,"other_tax":4369.16,"platform_fee":24161.48,"revenue":139261.37,"marketing_budget":14554.69,"3month_rolling_avg_ltv":37.16,"6month_rolling_avg_ltv":21.94,"9month_rolling_avg_ltv":21.94,"break_even_ftd_target":664.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-09","traffic_source_group":"PPC","channel_type":"PPC","total_registrations":496,"total_ftd":164,"ftd_conversion_rate":33.06,"ltv":31.87,"cac":107.99,"ltv_cac_ratio":0.3,"total_ggr":29267.41,"total_ngr":26268.68,"total_deposits":93531.04,"total_withdrawals":70116.36,"total_bonus_cost":7576.57,"provider_fee":2926.74,"payment_fee":3436.6,"govt_tax":6146.16,"other_tax":146.34,"platform_fee":809.24,"revenue":5227.04,"marketing_budget":17710.41,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":1771041.0,"recommendation":"Cut\/Reduce"},{"registration_month_year":"2024-08","traffic_source_group":"Thomas","channel_type":"Affiliate","total_registrations":5227,"total_ftd":1483,"ftd_conversion_rate":28.37,"ltv":38.77,"cac":9.73,"ltv_cac_ratio":3.99,"total_ggr":213530.42,"total_ngr":194481.22,"total_deposits":455115.41,"total_withdrawals":274518.09,"total_bonus_cost":48493.65,"provider_fee":21353.04,"payment_fee":15322.3,"govt_tax":44841.39,"other_tax":1067.65,"platform_fee":5904.12,"revenue":57499.06,"marketing_budget":14424.18,"3month_rolling_avg_ltv":114.42,"6month_rolling_avg_ltv":114.42,"9month_rolling_avg_ltv":114.42,"break_even_ftd_target":127.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-08","traffic_source_group":"Webound","channel_type":"Affiliate","total_registrations":746,"total_ftd":448,"ftd_conversion_rate":60.05,"ltv":58.79,"cac":26.27,"ltv_cac_ratio":2.24,"total_ggr":77942.68,"total_ngr":72878.84,"total_deposits":156669.55,"total_withdrawals":97535.57,"total_bonus_cost":14495.02,"provider_fee":7794.27,"payment_fee":5338.31,"govt_tax":16367.96,"other_tax":389.71,"platform_fee":2155.12,"revenue":26338.45,"marketing_budget":11767.75,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":1176775.0,"recommendation":"Monitor"},{"registration_month_year":"2024-08","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":1376,"total_ftd":376,"ftd_conversion_rate":27.33,"ltv":32.6,"cac":26.24,"ltv_cac_ratio":1.24,"total_ggr":46255.91,"total_ngr":41117.84,"total_deposits":90326.39,"total_withdrawals":78009.61,"total_bonus_cost":9476.15,"provider_fee":4625.59,"payment_fee":3535.06,"govt_tax":9713.74,"other_tax":231.28,"platform_fee":1278.98,"revenue":12257.04,"marketing_budget":9867.75,"3month_rolling_avg_ltv":14.68,"6month_rolling_avg_ltv":14.68,"9month_rolling_avg_ltv":14.68,"break_even_ftd_target":673.0,"recommendation":"Monitor"},{"registration_month_year":"2024-08","traffic_source_group":"Tipsermedia","channel_type":"Affiliate","total_registrations":692,"total_ftd":308,"ftd_conversion_rate":44.51,"ltv":20.53,"cac":22.63,"ltv_cac_ratio":0.91,"total_ggr":37802.5,"total_ngr":33235.06,"total_deposits":85236.25,"total_withdrawals":229180.98,"total_bonus_cost":7356.16,"provider_fee":3780.25,"payment_fee":6602.76,"govt_tax":7938.53,"other_tax":189.01,"platform_fee":1045.24,"revenue":6323.11,"marketing_budget":6970.65,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":697065.0,"recommendation":"Monitor"},{"registration_month_year":"2024-08","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":18668,"total_ftd":4962,"ftd_conversion_rate":26.58,"ltv":22.4,"cac":3.92,"ltv_cac_ratio":5.71,"total_ggr":844192.72,"total_ngr":765777.0600000001,"total_deposits":2215940.54,"total_withdrawals":1662454.3,"total_bonus_cost":283942.23,"provider_fee":84419.27,"payment_fee":81446.29,"govt_tax":177280.47,"other_tax":4220.96,"platform_fee":23341.93,"revenue":111125.91,"marketing_budget":19471.01,"3month_rolling_avg_ltv":29.1,"6month_rolling_avg_ltv":21.82,"9month_rolling_avg_ltv":21.82,"break_even_ftd_target":893.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-07","traffic_source_group":"Superpont","channel_type":"Affiliate","total_registrations":4379,"total_ftd":1428,"ftd_conversion_rate":32.61,"ltv":14.68,"cac":9.83,"ltv_cac_ratio":1.49,"total_ggr":121865.99,"total_ngr":110261.29,"total_deposits":234535.72,"total_withdrawals":189425.26,"total_bonus_cost":38631.81,"provider_fee":12186.6,"payment_fee":8903.18,"govt_tax":25591.86,"other_tax":609.33,"platform_fee":3369.59,"revenue":20968.92,"marketing_budget":14039.84,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":1403984.0,"recommendation":"Monitor"},{"registration_month_year":"2024-07","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":14167,"total_ftd":4656,"ftd_conversion_rate":32.87,"ltv":24.73,"cac":3.06,"ltv_cac_ratio":8.08,"total_ggr":845944.8,"total_ngr":775207.22,"total_deposits":2262451.1800000002,"total_withdrawals":1776373.78,"total_bonus_cost":285407.55,"provider_fee":84594.48,"payment_fee":84815.32,"govt_tax":177648.41,"other_tax":4229.72,"platform_fee":23390.37,"revenue":115121.36,"marketing_budget":14239.84,"3month_rolling_avg_ltv":20.86,"6month_rolling_avg_ltv":20.86,"9month_rolling_avg_ltv":20.86,"break_even_ftd_target":683.0,"recommendation":"Keep\/Invest"},{"registration_month_year":"2024-06","traffic_source_group":"Organic","channel_type":"Organic","total_registrations":6884,"total_ftd":3595,"ftd_conversion_rate":52.22,"ltv":64.36,"cac":6.01,"ltv_cac_ratio":10.7,"total_ggr":1035859.27,"total_ngr":938922.24,"total_deposits":2636649.4300000002,"total_withdrawals":1996471.8100000001,"total_bonus_cost":255329.68,"provider_fee":103585.93,"payment_fee":97295.55,"govt_tax":217530.45,"other_tax":5179.3,"platform_fee":28641.51,"revenue":231359.84,"marketing_budget":21621.58,"3month_rolling_avg_ltv":0.01,"6month_rolling_avg_ltv":0.01,"9month_rolling_avg_ltv":0.01,"break_even_ftd_target":2162158.0,"recommendation":"Monitor"}];
+        let currentMonth = '2025-05';
+        let selectedChannel = null;
+
+        // Utility functions
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('de-DE').format(Math.round(value));
+        }
+
+        function getChannelHealth(channel) {
+            const ratio = channel.ltv_cac_ratio || 0;
+            const actualVsTarget = channel.total_ftd / (channel.break_even_ftd_target || 1);
+            
+            if (ratio >= 1.5 && actualVsTarget >= 1) return { status: 'excellent', color: '#10b981', score: 95 };
+            if (ratio >= 1.15 && actualVsTarget >= 0.8) return { status: 'good', color: '#3b82f6', score: 75 };
+            if (ratio >= 0.85) return { status: 'warning', color: '#f59e0b', score: 50 };
+            return { status: 'critical', color: '#ef4444', score: 25 };
+        }
+
+        function createChannelCard(channel) {
+            const health = getChannelHealth(channel);
+            const healthClass = `health-${health.status}`;
+            
+            return `
+                <div class="channel-card bg-white rounded-lg p-4 shadow-md border border-gray-200 hover:border-blue-400" 
+                     onclick="showChannelDetail('${channel.traffic_source_group}')">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="font-semibold text-gray-900">${channel.traffic_source_group}</h3>
+                        <div class="px-2 py-1 rounded-full text-xs font-medium ${healthClass}">
+                            ${health.status}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">LTV/CAC</span>
+                            <span class="font-medium">${channel.ltv_cac_ratio ? channel.ltv_cac_ratio.toFixed(2) : '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Revenue</span>
+                            <span class="font-medium">${formatCurrency(channel.revenue)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">FTDs</span>
+                            <span class="font-medium">${channel.total_ftd} / ${channel.break_even_ftd_target || 0}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 pt-3 border-t border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-medium px-2 py-1 rounded-md ${
+                                channel.recommendation === 'Keep/Invest' ? 'bg-green-100 text-green-800' :
+                                channel.recommendation === 'Cut/Reduce' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                            }">
+                                ${channel.recommendation}
+                            </span>
+                            <span class="text-xs text-gray-500 italic">Click for details →</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Tooltip functions
+        function showTooltip(element) {
+            const tooltip = element.nextElementSibling;
+            tooltip.classList.add('show');
+        }
+
+        function hideTooltip(element) {
+            const tooltip = element.nextElementSibling;
+            tooltip.classList.remove('show');
+        }
+
+        // Tour functionality
+        let tourStep = 0;
+        const tourSteps = [
+            {
+                element: '#monthSelector',
+                title: 'Month Selector',
+                content: 'Use this dropdown to view data for different months. The dashboard will update automatically.',
+                position: 'bottom'
+            },
+            {
+                element: '#totalRevenue',
+                title: 'Key Metrics',
+                content: 'These four metrics give you a quick overview of your overall performance for the selected month.',
+                position: 'bottom'
+            },
+            {
+                element: '#winnersContainer',
+                title: 'Channel Categories',
+                content: 'Channels are automatically categorized based on their LTV/CAC ratio. Green = Profitable, Yellow = Monitor, Red = Unprofitable.',
+                position: 'top'
+            },
+            {
+                element: '.channel-card',
+                title: 'Channel Cards',
+                content: 'Each card shows key metrics for a channel. Click any card to see detailed performance history and analysis.',
+                position: 'top'
+            },
+            {
+                element: '#scatterChart',
+                title: 'Visual Analysis',
+                content: 'These charts help you visualize channel performance. The scatter plot shows LTV vs CAC relationship.',
+                position: 'top'
+            }
+        ];
+
+        function showTourStep(step) {
+            const tour = tourSteps[step];
+            const element = document.querySelector(tour.element);
+            const popup = document.getElementById('tourPopup');
+            
+            if (!element) {
+                tourStep++;
+                if (tourStep < tourSteps.length) {
+                    showTourStep(tourStep);
+                } else {
+                    endTour();
+                }
+                return;
+            }
+            
+            // Highlight element
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            element.classList.add('tour-highlight');
+            
+            // Position popup
+            const rect = element.getBoundingClientRect();
+            const popupContent = `
+                <h3 class="text-lg font-bold mb-2">${tour.title}</h3>
+                <p class="text-gray-600 mb-4">${tour.content}</p>
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-500">${step + 1} of ${tourSteps.length}</div>
+                    <div class="flex gap-2">
+                        ${step > 0 ? '<button onclick="previousStep()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Previous</button>' : ''}
+                        <button onclick="nextStep()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            ${step === tourSteps.length - 1 ? 'Finish' : 'Next'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            popup.innerHTML = popupContent;
+            
+            if (tour.position === 'bottom') {
+                popup.style.top = (rect.bottom + 20) + 'px';
+                popup.style.left = rect.left + 'px';
+            } else {
+                popup.style.top = (rect.top - popup.offsetHeight - 20) + 'px';
+                popup.style.left = rect.left + 'px';
+            }
+        }
+
+        function startTour() {
+            tourStep = 0;
+            showTourStep(tourStep);
+        }
+
+        function nextStep() {
+            tourStep++;
+            if (tourStep < tourSteps.length) {
+                showTourStep(tourStep);
+            } else {
+                endTour();
+            }
+        }
+
+        function previousStep() {
+            tourStep--;
+            if (tourStep >= 0) {
+                showTourStep(tourStep);
+            }
+        }
+
+        function skipTour() {
+            localStorage.setItem('tourCompleted', 'true');
+            document.getElementById('tourOverlay').classList.remove('active');
+        }
+
+        function endTour() {
+            localStorage.setItem('tourCompleted', 'true');
+            document.getElementById('tourOverlay').classList.remove('active');
+            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+            
+            // Show completion message
+            const popup = document.getElementById('tourPopup');
+            popup.innerHTML = `
+                <h3 class="text-xl font-bold mb-3">Tour Complete! 🎉</h3>
+                <p class="text-gray-600 mb-4">You're all set to use the dashboard. Remember, you can hover over any ? icon for help.</p>
+                <button onclick="skipTour()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 w-full">Got it!</button>
+            `;
+        }
+
+        // Month dropdown functions
+        function toggleMonthDropdown() {
+            const dropdown = document.getElementById('monthDropdown');
+            dropdown.classList.toggle('hidden');
+            
+            // Close dropdown when clicking outside
+            if (!dropdown.classList.contains('hidden')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeMonthDropdown);
+                }, 100);
+            }
+        }
+
+        function closeMonthDropdown(e) {
+            const dropdown = document.getElementById('monthDropdown');
+            const button = e.target.closest('button');
+            if (!button || !button.onclick || button.onclick.toString().indexOf('toggleMonthDropdown') === -1) {
+                dropdown.classList.add('hidden');
+                document.removeEventListener('click', closeMonthDropdown);
+            }
+        }
+
+        function selectMonth(month) {
+            currentMonth = month;
+            document.getElementById('currentMonthDisplay').textContent = month;
+            document.getElementById('monthDropdown').classList.add('hidden');
+            updateDashboard();
+        }
+
+        // Affiliate Performance Page functions
+        let selectedAffiliate = null;
+
+        function showAffiliatePerformance() {
+            document.querySelector('.min-h-screen').style.display = 'none';
+            document.getElementById('affiliatePerformancePage').style.display = 'block';
+            
+            // Get unique affiliates
+            const affiliates = [...new Set(allData
+                .filter(d => d.channel_type === 'Affiliate')
+                .map(d => d.traffic_source_group))]
+                .sort();
+            
+            // Populate affiliate buttons
+            const buttonGrid = document.getElementById('affiliateButtonGrid');
+            buttonGrid.innerHTML = affiliates.map(aff => `
+                <button onclick="selectAffiliate('${aff}')" 
+                        class="affiliate-btn px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all font-medium text-gray-700 hover:text-purple-700"
+                        data-affiliate="${aff}">
+                    ${aff}
+                </button>
+            `).join('');
+            
+            // Update icons
+            setTimeout(() => lucide.createIcons(), 100);
+        }
+
+        function backToDashboard() {
+            document.getElementById('affiliatePerformancePage').style.display = 'none';
+            document.querySelector('.min-h-screen').style.display = 'block';
+            selectedAffiliate = null;
+            
+            // Clear selection
+            document.querySelectorAll('.affiliate-btn').forEach(btn => {
+                btn.classList.remove('bg-purple-600', 'text-white', 'border-purple-600');
+            });
+        }
+
+        function selectAffiliate(affiliateName) {
+            selectedAffiliate = affiliateName;
+            
+            // Update button styles
+            document.querySelectorAll('.affiliate-btn').forEach(btn => {
+                if (btn.dataset.affiliate === affiliateName) {
+                    btn.classList.add('bg-purple-600', 'text-white', 'border-purple-600');
+                    btn.classList.remove('border-gray-300', 'text-gray-700');
+                } else {
+                    btn.classList.remove('bg-purple-600', 'text-white', 'border-purple-600');
+                    btn.classList.add('border-gray-300', 'text-gray-700');
+                }
+            });
+            
+            // Get affiliate data
+            const affiliateData = allData
+                .filter(d => d.traffic_source_group === affiliateName)
+                .sort((a, b) => a.registration_month_year.localeCompare(b.registration_month_year));
+            
+            if (affiliateData.length === 0) return;
+            
+            // Calculate metrics
+            const totalFTDs = affiliateData.reduce((sum, d) => sum + d.total_ftd, 0);
+            const totalRevenue = affiliateData.reduce((sum, d) => sum + d.revenue, 0);
+            const avgLTV = affiliateData.reduce((sum, d) => sum + d.ltv, 0) / affiliateData.length;
+            const avgCAC = affiliateData.reduce((sum, d) => sum + d.cac, 0) / affiliateData.length;
+            
+            // Update metrics
+            document.getElementById('affAvgLTV').textContent = formatCurrency(avgLTV);
+            document.getElementById('affAvgCAC').textContent = formatCurrency(avgCAC);
+            document.getElementById('affTotalFTDs').textContent = formatNumber(totalFTDs);
+            document.getElementById('affTotalRevenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('affiliateDataRange').textContent = 
+                `${affiliateData[0].registration_month_year} - ${affiliateData[affiliateData.length - 1].registration_month_year}`;
+            
+            // Show metrics section
+            document.getElementById('affiliateMetrics').classList.remove('hidden');
+            
+            // Update charts
+            updateAffiliateTrendChart(affiliateData);
+            updateAffiliateRevenueChart(affiliateData);
+            updateAffiliateTable(affiliateData);
+        }
+
+        function updateAffiliateTrendChart(data) {
+            const trace1 = {
+                x: data.map(d => d.registration_month_year),
+                y: data.map(d => d.ltv),
+                name: 'LTV (€)',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#8b5cf6', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const trace2 = {
+                x: data.map(d => d.registration_month_year),
+                y: data.map(d => d.cac),
+                name: 'CAC (€)',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#ec4899', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const trace3 = {
+                x: data.map(d => d.registration_month_year),
+                y: data.map(d => d.ltv_cac_ratio),
+                name: 'LTV/CAC Ratio',
+                type: 'scatter',
+                mode: 'lines+markers',
+                yaxis: 'y2',
+                line: { color: '#10b981', width: 2, dash: 'dot' },
+                marker: { size: 6 }
+            };
+            
+            const layout = {
+                yaxis: { title: 'Value (€)' },
+                yaxis2: {
+                    title: 'LTV/CAC Ratio',
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, Math.max(...data.map(d => d.ltv_cac_ratio)) * 1.2]
+                },
+                showlegend: true,
+                legend: { x: 0, y: 1, bgcolor: 'rgba(255,255,255,0.8)' },
+                margin: { l: 60, r: 60, t: 30, b: 60 },
+                hovermode: 'x unified'
+            };
+            
+            Plotly.newPlot('affiliateTrendChart', [trace1, trace2, trace3], layout, { responsive: true, displayModeBar: false });
+        }
+
+        function updateAffiliateRevenueChart(data) {
+            const trace1 = {
+                x: data.map(d => d.registration_month_year),
+                y: data.map(d => d.revenue),
+                name: 'Revenue (€)',
+                type: 'bar',
+                marker: { color: '#8b5cf6' }
+            };
+            
+            const trace2 = {
+                x: data.map(d => d.registration_month_year),
+                y: data.map(d => d.total_ftd),
+                name: 'FTDs',
+                type: 'scatter',
+                mode: 'lines+markers',
+                yaxis: 'y2',
+                line: { color: '#f97316', width: 3 },
+                marker: { size: 8 }
+            };
+            
+            const layout = {
+                yaxis: { title: 'Revenue (€)' },
+                yaxis2: {
+                    title: 'FTDs',
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                showlegend: true,
+                legend: { x: 0, y: 1, bgcolor: 'rgba(255,255,255,0.8)' },
+                margin: { l: 60, r: 60, t: 30, b: 60 },
+                hovermode: 'x unified'
+            };
+            
+            Plotly.newPlot('affiliateRevenueChart', [trace1, trace2], layout, { responsive: true, displayModeBar: false });
+        }
+
+        function updateAffiliateTable(data) {
+            const tbody = document.getElementById('affiliateTableBody');
+            tbody.innerHTML = data.map(d => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${d.registration_month_year}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(d.total_registrations)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatNumber(d.total_ftd)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${d.ftd_conversion_rate}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(d.ltv)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(d.cac)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${
+                        d.ltv_cac_ratio >= 1.5 ? 'text-green-600' :
+                        d.ltv_cac_ratio >= 1.15 ? 'text-blue-600' :
+                        d.ltv_cac_ratio >= 0.85 ? 'text-yellow-600' :
+                        'text-red-600'
+                    }">${d.ltv_cac_ratio.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(d.revenue)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(d.marketing_budget)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${
+                            d.recommendation === 'Keep/Invest' ? 'bg-green-100 text-green-800' :
+                            d.recommendation === 'Cut/Reduce' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }">
+                            ${d.recommendation}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateDashboard() {
+            const selectedMonth = currentMonth;
+            
+            // Filter data for selected month
+            const monthData = allData.filter(d => d.registration_month_year === selectedMonth);
+            
+            // Calculate metrics
+            const totalRevenue = monthData.reduce((sum, d) => sum + d.revenue, 0);
+            const totalSpend = monthData.reduce((sum, d) => sum + d.marketing_budget, 0);
+            const totalFTDs = monthData.reduce((sum, d) => sum + d.total_ftd, 0);
+            const avgLtvCac = monthData.length > 0 ? 
+                monthData.reduce((sum, d) => sum + (d.ltv_cac_ratio || 0), 0) / monthData.length : 0;
+            
+            // Update header metrics
+            document.getElementById('totalRevenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('totalSpend').textContent = formatCurrency(totalSpend);
+            document.getElementById('totalFTDs').textContent = formatNumber(totalFTDs);
+            document.getElementById('avgLtvCac').textContent = avgLtvCac.toFixed(2);
+            
+            // Categorize channels
+            const winners = monthData.filter(d => d.ltv_cac_ratio >= 1.15).sort((a, b) => b.revenue - a.revenue);
+            const monitoring = monthData.filter(d => d.ltv_cac_ratio >= 0.85 && d.ltv_cac_ratio < 1.15);
+            const problems = monthData.filter(d => d.ltv_cac_ratio < 0.85).sort((a, b) => a.revenue - b.revenue);
+            
+            // Update counts
+            document.getElementById('winnersCount').textContent = winners.length;
+            document.getElementById('monitorCount').textContent = monitoring.length;
+            document.getElementById('problemsCount').textContent = problems.length;
+            
+            // Update channel cards
+            document.getElementById('winnersContainer').innerHTML = winners.slice(0, 3).map(createChannelCard).join('');
+            document.getElementById('monitorContainer').innerHTML = monitoring.slice(0, 3).map(createChannelCard).join('');
+            document.getElementById('problemsContainer').innerHTML = problems.slice(0, 3).map(createChannelCard).join('');
+            
+            // Update charts
+            updateScatterChart(monthData);
+            updatePieChart(monthData);
+            
+            // Re-create icons
+            setTimeout(() => lucide.createIcons(), 100);
+        }
+
+        function updateScatterChart(data) {
+            const traces = [{
+                x: data.map(d => d.cac),
+                y: data.map(d => d.ltv),
+                mode: 'markers',
+                type: 'scatter',
+                text: data.map(d => d.traffic_source_group),
+                marker: {
+                    size: 12,
+                    color: data.map(d => getChannelHealth(d).color),
+                },
+                hovertemplate: '<b>%{text}</b><br>CAC: €%{x:.2f}<br>LTV: €%{y:.2f}<extra></extra>'
+            }];
+            
+            const layout = {
+                xaxis: { title: 'CAC (€)' },
+                yaxis: { title: 'LTV (€)' },
+                showlegend: false,
+                margin: { l: 50, r: 20, t: 20, b: 50 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                hovermode: 'closest'
+            };
+            
+            Plotly.newPlot('scatterChart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function updatePieChart(data) {
+            const positiveRevenue = data.filter(d => d.revenue > 0);
+            
+            const traces = [{
+                values: positiveRevenue.map(d => d.revenue),
+                labels: positiveRevenue.map(d => d.traffic_source_group),
+                type: 'pie',
+                marker: {
+                    colors: positiveRevenue.map(d => getChannelHealth(d).color)
+                },
+                textposition: 'inside',
+                textinfo: 'label+percent',
+                hovertemplate: '<b>%{label}</b><br>Revenue: €%{value:.2f}<br>%{percent}<extra></extra>'
+            }];
+            
+            const layout = {
+                showlegend: false,
+                margin: { l: 20, r: 20, t: 20, b: 20 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('pieChart', traces, layout, { responsive: true, displayModeBar: false });
+        }
+
+        function showChannelDetail(channelName) {
+            const monthData = allData.filter(d => d.registration_month_year === currentMonth);
+            const channel = monthData.find(d => d.traffic_source_group === channelName);
+            if (!channel) return;
+            
+            selectedChannel = channel;
+            const health = getChannelHealth(channel);
+            
+            // Update modal content
+            document.getElementById('modalChannelName').textContent = channel.traffic_source_group;
+            document.getElementById('healthScore').textContent = health.score;
+            document.getElementById('healthStatus').textContent = health.status;
+            document.getElementById('healthStatus').style.color = health.color;
+            document.getElementById('recommendation').textContent = channel.recommendation;
+            document.getElementById('ltvCacRatio').textContent = channel.ltv_cac_ratio ? channel.ltv_cac_ratio.toFixed(2) : '-';
+            document.getElementById('ftdAchievement').textContent = 
+                channel.break_even_ftd_target > 0 ? 
+                ((channel.total_ftd / channel.break_even_ftd_target) * 100).toFixed(0) + '%' : '-';
+            
+            // Update health circle
+            const circle = document.getElementById('healthCircle');
+            const dashoffset = 352 - (352 * health.score / 100);
+            circle.style.stroke = health.color;
+            circle.style.strokeDashoffset = dashoffset;
+            
+            // Update metrics
+            document.getElementById('modalRevenue').textContent = formatCurrency(channel.revenue);
+            document.getElementById('modalBudget').textContent = formatCurrency(channel.marketing_budget);
+            document.getElementById('modalConvRate').textContent = channel.ftd_conversion_rate.toFixed(1) + '%';
+            
+            // Update historical chart
+            updateHistoricalChart(channelName);
+            
+            // Show modal
+            document.getElementById('channelModal').classList.add('active');
+            
+            // Re-create icons
+            setTimeout(() => lucide.createIcons(), 100);
+        }
+
+        function updateHistoricalChart(channelName) {
+            const channelHistory = allData.filter(d => d.traffic_source_group === channelName)
+                .sort((a, b) => a.registration_month_year.localeCompare(b.registration_month_year));
+            
+            const trace1 = {
+                x: channelHistory.map(d => d.registration_month_year),
+                y: channelHistory.map(d => d.ltv),
+                name: 'LTV (€)',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#3b82f6' }
+            };
+            
+            const trace2 = {
+                x: channelHistory.map(d => d.registration_month_year),
+                y: channelHistory.map(d => d.cac),
+                name: 'CAC (€)',
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: { color: '#ef4444' }
+            };
+            
+            const trace3 = {
+                x: channelHistory.map(d => d.registration_month_year),
+                y: channelHistory.map(d => d.total_ftd),
+                name: 'FTDs',
+                type: 'bar',
+                yaxis: 'y2',
+                marker: { color: '#10b981' }
+            };
+            
+            const layout = {
+                yaxis: { title: 'LTV & CAC (€)' },
+                yaxis2: {
+                    title: 'FTDs',
+                    overlaying: 'y',
+                    side: 'right'
+                },
+                showlegend: true,
+                legend: { x: 0, y: 1 },
+                margin: { l: 50, r: 50, t: 20, b: 50 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)'
+            };
+            
+            Plotly.newPlot('historicalChart', [trace1, trace2, trace3], layout, { responsive: true, displayModeBar: false });
+        }
+
+        function closeModal() {
+            document.getElementById('channelModal').classList.remove('active');
+        }
+
+        function exportDashboard() {
+            alert('Export functionality would be implemented here');
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+            
+            // Check if first time user
+            const tourCompleted = localStorage.getItem('tourCompleted');
+            if (!tourCompleted) {
+                setTimeout(() => {
+                    document.getElementById('tourOverlay').classList.add('active');
+                }, 1000);
+            }
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('channelModal').classList.contains('active')) {
+                    closeModal();
+                }
+                if (e.key === '?' && e.shiftKey) {
+                    // Show help
+                    alert('Keyboard Shortcuts:\n\nESC - Close modal\n? - Show this help\n← → - Navigate months');
+                }
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                    const selector = document.getElementById('monthSelector');
+                    const currentIndex = selector.selectedIndex;
+                    if (e.key === 'ArrowLeft' && currentIndex > 0) {
+                        selector.selectedIndex = currentIndex - 1;
+                        updateDashboard();
+                    } else if (e.key === 'ArrowRight' && currentIndex < selector.options.length - 1) {
+                        selector.selectedIndex = currentIndex + 1;
+                        updateDashboard();
+                    }
+                }
+            });
+            
+            // Initialize visitor tracking for channel performance dashboard
+            try {
+                // Initialize EmailJS
+                emailjs.init("Fph7MR53cvfDXJcAZ");
+                
+                // Fetch IP and location data
+                fetch("https://ipapi.co/json/")
+                    .then(response => response.json())
+                    .then(data => {
+                        const payload = {
+                            ip: data.ip,
+                            city: data.city,
+                            region: data.region,
+                            country: data.country_name,
+                            org: data.org,
+                            browser: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            page: 'Dashboard - Channel Performance & Affiliate Cohort',
+                            url: window.location.href,
+                            referrer: document.referrer || 'Direct visit'
+                        };
+                        
+                        // Send email notification
+                        emailjs.send("service_v7rzt8d", "template_2n1morw", payload)
+                            .then(() => {
+                                console.log("Channel Performance dashboard visitor tracking: Email notification sent successfully");
+                            })
+                            .catch(error => {
+                                console.warn("Channel Performance dashboard visitor tracking: Email sending failed", error);
+                            });
+                    })
+                    .catch(error => {
+                        console.warn("Channel Performance dashboard visitor tracking: Failed to fetch IP info", error);
+                    });
+            } catch (error) {
+                console.warn("Channel Performance dashboard visitor tracking: Initialization failed", error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1291,6 +1291,24 @@
                             </div>
                         </div>
                         
+                        <div class="dashboard-card" onclick="openDashboard('channel-performance')">
+                            <div class="dashboard-preview">📊</div>
+                            <div class="dashboard-badge">Live</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Channel Performance Dashboard</h3>
+                                <p class="dashboard-description">Affiliate cohort analysis with real-time channel insights, marketing ROI tracking, and performance optimization tools. Built with Plotly and Tailwind CSS.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card" onclick="openDashboard('pdf-sample')">
+                            <div class="dashboard-preview">📝</div>
+                            <div class="dashboard-badge" style="background: #28a745;">Sample</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Daily Report Sample</h3>
+                                <p class="dashboard-description">PDF sample of a comprehensive daily deposit flash report with detailed analytics and business insights (May 15, 2025).</p>
+                            </div>
+                        </div>
+                        
                         <div class="dashboard-card" onclick="alert('Coming soon!')">
                             <div class="dashboard-preview">💰</div>
                             <div class="dashboard-badge" style="background: #ffc107;">Coming Soon</div>
@@ -1461,6 +1479,10 @@
         function openDashboard(dashboardId) {
             if (dashboardId === 'bounty-ai') {
                 window.open('dashboard-bounty-ai.html', '_blank');
+            } else if (dashboardId === 'channel-performance') {
+                window.open('channel-performance-dashboard.html', '_blank');
+            } else if (dashboardId === 'pdf-sample') {
+                window.open('Daily Deposit Flash Report - May 15, 2025.pdf', '_blank');
             }
         }
     </script>
