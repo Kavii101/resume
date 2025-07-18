@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kavodel Akinola - Resume</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .resume-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .name {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .contact-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .contact-icon {
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 0;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-right: 3px solid #e9ecef;
+        }
+
+        .main-section {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: #764ba2;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            box-shadow: 0 8px 16px rgba(240, 147, 251, 0.3);
+        }
+
+        .experience-item {
+            background: white;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+
+        .experience-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .job-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.3rem;
+        }
+
+        .company {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 0.3rem;
+        }
+
+        .duration {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .achievement {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+            position: relative;
+            color: #495057;
+        }
+
+        .achievement::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .skills-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .skill-category {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .skill-category h4 {
+            color: #28a745;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .skills-list {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .education-item {
+            background: #e3f2fd;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .degree {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 0.2rem;
+        }
+
+        .institution {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .languages {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .language-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 0.8rem;
+            border-radius: 6px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .language-level {
+            background: #ff9800;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .achievements-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .achievement-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 1.2rem;
+            border-radius: 10px;
+            color: #2c3e50;
+            box-shadow: 0 6px 12px rgba(132, 250, 176, 0.3);
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .highlight-number {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .contact-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .name {
+                font-size: 2rem;
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+            
+            .print-button {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 1rem auto;
+                display: block;
+                border-radius: 8px;
+                width: auto;
+            }
+        }
+
+        .kpi-dashboard {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .kpi-dashboard h3 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.6rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .kpi-card:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .kpi-title {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        .kpi-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4aa, #00d4ff);
+            border-radius: 4px;
+            transition: width 2s ease-in-out;
+            animation: fillBar 2s ease-in-out;
+        }
+
+        @keyframes fillBar {
+            from { width: 0%; }
+        }
+
+        .chart-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: end;
+            height: 150px;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .bar {
+            flex: 1;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.5s ease;
+            cursor: pointer;
+            position: relative;
+            min-height: 20px;
+        }
+
+        .bar:hover {
+            background: linear-gradient(to top, #f093fb, #f5576c);
+            transform: scale(1.05);
+        }
+
+        .bar-label {
+            text-align: center;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .bar:hover .bar-value {
+            opacity: 1;
+        }
+
+        .donut-chart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            position: relative;
+        }
+
+        .donut {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #00d4aa 0% 35%,
+                #00d4ff 35% 73%,
+                #667eea 73% 91%,
+                rgba(255,255,255,0.3) 91% 100%
+            );
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .donut:hover {
+            transform: scale(1.1);
+        }
+
+        .donut::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 80px;
+            height: 80px;
+            background: #1e3c72;
+            border-radius: 50%;
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2;
+        }
+
+        .donut-center-value {
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .donut-center-label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .trend-up {
+            color: #00d4aa;
+        }
+
+        .trend-down {
+            color: #ff6b6b;
+        }
+
+        .animated-counter {
+            display: inline-block;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            max-width: 200px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .bar:hover .tooltip {
+            opacity: 1;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .resume-container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            .print-button {
+                display: none;
+            }
+            
+            .header::before {
+                display: none;
+            }
+            
+            .kpi-dashboard {
+                background: #f8f9fa;
+                color: #2c3e50;
+            }
+            
+            .skills-demo-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()" title="Print Resume">
+        🖨️
+    </button>
+
+    <div class="resume-container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="name">Kavodel Akinola</h1>
+                <p class="title">Head of Business Intelligence | PMP, MBA</p>
+                
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="contact-icon">📍</span>
+                        <span>Bucharest, Romania</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">📞</span>
+                        <span>+40 755 629 762</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">✉️</span>
+                        <span>kavodel.akin@gmail.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">🔗</span>
+                        <span>LinkedIn Profile</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <section class="section">
+                    <h2 class="section-title">Core Competencies</h2>
+                    <div class="skills-grid">
+                        <div class="skill-category">
+                            <h4>BI & Visualization</h4>
+                            <p class="skills-list">Power BI, Tableau, Excel, Redash</p>
+                        </div>
+                        <div class="skill-category">
+                            <h4>Data & Programming</h4>
+                            <p class="skills-list">Python, SQL, ETL Pipelines, Data Warehousing</p>
+                        </div>
+                        <div class="skill-category">
+                            <h4>Cloud & Infrastructure</h4>
+                            <p class="skills-list">Azure, CI/CD (Docker, Jenkins), Cloud SQL</p>
+                        </div>
+                        <div class="skill-category">
+                            <h4>Project Management</h4>
+                            <p class="skills-list">Agile/Scrum, JIRA, PMP, Strategic Planning</p>
+                        </div>
+                        <div class="skill-category">
+                            <h4>Specializations</h4>
+                            <p class="skills-list">Customer Segmentation, Forecasting Models, Churn Prediction, Gaming Analytics, Regulatory Reporting</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Education</h2>
+                    <div class="education-item">
+                        <div class="degree">MBA</div>
+                        <div class="institution">University of Nicosia, Cyprus (2016 – 2019)</div>
+                    </div>
+                    <div class="education-item">
+                        <div class="degree">Master in Business Communication</div>
+                        <div class="institution">Academy of Economic Studies, Romania (2022 – Present)</div>
+                    </div>
+                    <div class="education-item">
+                        <div class="degree">BSc in Management & Technology</div>
+                        <div class="institution">Bells University of Technology, Nigeria (2010 – 2015)</div>
+                    </div>
+                    <div class="education-item">
+                        <div class="degree">Project Management Professional (PMP)</div>
+                        <div class="institution">PMI #1883634 (Certified 2015)</div>
+                    </div>
+                    
+                    <div class="education-item">
+                        <div class="degree">Entrepreneurship School Diploma</div>
+                        <div class="institution">Coca-Cola Foundation, Cyprus (2016)</div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Languages</h2>
+                    <div class="languages">
+                        <div class="language-item">
+                            <span>English</span>
+                            <span class="language-level">C2</span>
+                        </div>
+                        <div class="language-item">
+                            <span>Romanian</span>
+                            <span class="language-level">B1</span>
+                        </div>
+                        <div class="language-item">
+                            <span>Yoruba</span>
+                            <span class="language-level">C2</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+
+            <main class="main-section">
+                <section class="section">
+                    <h2 class="section-title">Professional Summary</h2>
+                    <div class="summary">
+                        Accomplished Head of Business Intelligence with <span class="highlight-number">5+ years</span> in the iGaming industry, combining technical depth in data engineering with strategic business acumen. Expert in developing AI-powered analytics systems, leading cross-functional teams, and delivering real-time insights across finance, marketing, operations, and compliance. Proven ability to drive business growth, reduce operational inefficiencies, and unlock actionable intelligence from complex data ecosystems.
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="kpi-dashboard">
+                        <h3>📊 Key Performance Indicators & Impact Analytics</h3>
+                        
+                        <div class="kpi-grid">
+                            <div class="kpi-card" onclick="animateKPI(this)">
+                                <div class="kpi-title">Executive Forecast Accuracy</div>
+                                <div class="kpi-value">94%</div>
+                                <div class="kpi-bar">
+                                    <div class="kpi-progress" style="width: 94%"></div>
+                                </div>
+                                <div class="metric-trend trend-up">↗️ Board-Level Financial Models</div>
+                            </div>
+                            
+                            <div class="kpi-card" onclick="animateKPI(this)">
+                                <div class="kpi-title">Customer Segmentation Impact</div>
+                                <div class="kpi-value">26%</div>
+                                <div class="kpi-bar">
+                                    <div class="kpi-progress" style="width: 26%"></div>
+                                </div>
+                                <div class="metric-trend trend-up">↗️ Conversion Rate Improvement</div>
+                            </div>
+                            
+                            <div class="kpi-card" onclick="animateKPI(this)">
+                                <div class="kpi-title">Process Automation Savings</div>
+                                <div class="kpi-value">€1.05M</div>
+                                <div class="kpi-bar">
+                                    <div class="kpi-progress" style="width: 85%"></div>
+                                </div>
+                                <div class="metric-trend trend-up">↗️ Cross-Departmental Efficiency</div>
+                            </div>
+                            
+                            <div class="kpi-card" onclick="animateKPI(this)">
+                                <div class="kpi-title">Promotion Success Analysis</div>
+                                <div class="kpi-value">35%</div>
+                                <div class="kpi-bar">
+                                    <div class="kpi-progress" style="width: 35%"></div>
+                                </div>
+                                <div class="metric-trend trend-up">↗️ Marketing ROI Improvement</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Business Value Generated Through Quantitative Analysis</div>
+                            <div class="bar-chart">
+                                <div class="bar" style="height: 90%" onclick="showBarValue(this, '€500K')" 
+                                     onmouseover="showTooltip(event, 'Cost Savings: Executive forecasting models with 94% accuracy reduced budget variance by €500K annually through predictive analytics and statistical modeling')"
+                                     onmouseout="hideTooltip()">
+                                    <div class="bar-value">€500K</div>
+                                </div>
+                                <div class="bar" style="height: 75%" onclick="showBarValue(this, '€380K')"
+                                     onmouseover="showTooltip(event, 'Revenue Impact: Customer segmentation using clustering algorithms and behavioral analytics generated €380K additional revenue through targeted campaigns')"
+                                     onmouseout="hideTooltip()">
+                                    <div class="bar-value">€380K</div>
+                                </div>
+                                <div class="bar" style="height: 85%" onclick="showBarValue(this, '€400K')"
+                                     onmouseover="showTooltip(event, 'ROI Optimization: Commission structure analysis using regression models and profit margin calculations delivered €400K in optimized earnings')"
+                                     onmouseout="hideTooltip()">
+                                    <div class="bar-value">€400K</div>
+                                </div>
+                                <div class="bar" style="height: 65%" onclick="showBarValue(this, '€300K')"
+                                     onmouseover="showTooltip(event, 'Efficiency Gains: Market analysis and competitive benchmarking using data mining techniques improved operational efficiency worth €300K')"
+                                     onmouseout="hideTooltip()">
+                                    <div class="bar-value">€300K</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
+                                <div class="bar-label">Cost Savings<br><small>(Forecasting)</small></div>
+                                <div class="bar-label">Revenue Impact<br><small>(Segmentation)</small></div>
+                                <div class="bar-label">ROI Optimization<br><small>(Commission Analysis)</small></div>
+                                <div class="bar-label">Efficiency Gains<br><small>(Market Analysis)</small></div>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-title">Business Decision Support & Training Impact</div>
+                            <div class="donut-chart">
+                                <div class="donut" onclick="animateDonut()">
+                                    <div class="donut-center">
+                                        <div class="donut-center-value">6+</div>
+                                        <div class="donut-center-label">Departments</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="legend">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #00d4aa;"></div>
+                                    <span>Executive Reporting (40%)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #00d4ff;"></div>
+                                    <span>Forecasting Models (30%)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #667eea;"></div>
+                                    <span>Team Training (20%)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: rgba(255,255,255,0.3);"></div>
+                                    <span>Market Analysis (10%)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Professional Experience</h2>
+                    
+                    <div class="experience-item">
+                        <div class="job-title">Head of Business Intelligence</div>
+                        <div class="company">BETMEN</div>
+                        <div class="duration">Current | €15M+ GGR casino & sportsbook operation</div>
+                        <div class="achievement">Directed BI strategy and managed a cross-functional team of 5, covering ETL, analytics, compliance, and executive reporting across 15+ integrated platforms</div>
+                        <div class="achievement">Created and maintained executive forecasts shared at board level with <span class="highlight-number">94% accuracy</span> across financial and operational metrics</div>
+                        <div class="achievement">Performed segmentation analysis on internal customer data, creating <span class="highlight-number">12+ player personas</span> increasing campaign conversion by 26%</div>
+                        <div class="achievement">Trained <span class="highlight-number">5 BI team members</span> on advanced forecasting and segmentation methodologies</div>
+                        <div class="achievement">Built automated, interactive Power BI reporting for management and shareholders, reducing manual reporting time by <span class="highlight-number">75%</span></div>
+                        <div class="achievement">Developed real-time data infrastructure with <span class="highlight-number">99.9% uptime</span> across payment gateways, CRMs, game providers, and regulatory systems</div>
+                        <div class="achievement">Led development of churn prediction and fraud detection models, saving <span class="highlight-number">€380K annually</span></div>
+                        <div class="achievement">Delivered predictive LTV models increasing player value from €20 to <span class="highlight-number">€58</span></div>
+                        <div class="achievement">Automated cohort analysis, real-time campaign alerting, and high-variance management systems for VIPs</div>
+                        <div class="achievement">Negotiated provider contracts based on game portfolio ROI analysis, saving <span class="highlight-number">€400K/year</span></div>
+                        <div class="achievement">Identified automation opportunities saving <span class="highlight-number">€1.05M annually</span> through technical solutions across departments</div>
+                        <div class="achievement">Analyzed promotion effectiveness for CRM/Marketing teams, improving campaign ROI by <span class="highlight-number">35%</span></div>
+                        <div class="achievement">Evaluated market competitiveness vs external benchmarks, advising on <span class="highlight-number">€2M+</span> resource allocation decisions</div>
+                        <div class="achievement">Supported department heads with projections and modeling: profit forecasts, system load analysis, signup predictions, line changes</div>
+                    </div>
+
+                    <div class="experience-item">
+                        <div class="job-title">General Manager Business Analyst</div>
+                        <div class="company">Fortuna Entertainment Group (FEG)</div>
+                        <div class="duration">2022 – 2024 | Reporting directly to the General Manager</div>
+                        <div class="achievement">Built C-level forecasting models and regulatory reports for executive and board presentations</div>
+                        <div class="achievement">Conducted quantitative analysis across <span class="highlight-number">8 acquisition channels</span>, optimizing CPA performance and resource allocation</div>
+                        <div class="achievement">Evaluated commission structures and business models, providing recommendations that improved profitability by <span class="highlight-number">15%</span></div>
+                        <div class="achievement">Delivered real-time strategic support for market expansion decisions and competitive positioning analysis</div>
+                        <div class="achievement">Identified cost-saving opportunities through industry benchmarking, achieving <span class="highlight-number">€500K</span> in annual savings</div>
+                    </div>
+
+                    <div class="experience-item">
+                        <div class="job-title">Business Analyst</div>
+                        <div class="company">Birinci Investments</div>
+                        <div class="duration">2018 – 2022</div>
+                        <div class="achievement">Led financial models for <span class="highlight-number">$50M+</span> M&A deals, improving investor confidence and deal velocity</div>
+                        <div class="achievement">Designed forecast models boosting portfolio company revenues by <span class="highlight-number">10%</span></div>
+                    </div>
+
+                    <div class="experience-item">
+                        <div class="job-title">Business Analyst</div>
+                        <div class="company">Ingenieurbüro I-Z, Berlin</div>
+                        <div class="duration">2017 – 2018</div>
+                        <div class="achievement">Supported GIS product launch with data-led market segmentation achieving <span class="highlight-number">30%</span> market penetration</div>
+                        <div class="achievement">Introduced BI workflows and dashboards, raising internal efficiency by <span class="highlight-number">25%</span></div>
+                    </div>
+
+                    <div class="experience-item">
+                        <div class="job-title">Business Developer</div>
+                        <div class="company">ICentra, Abuja</div>
+                        <div class="duration">2015 – 2016</div>
+                        <div class="achievement">Led technology project analysis and client lifecycle metrics for enterprise clients</div>
+                        <div class="achievement">Supported strategic planning with competitive insights and revenue forecasting</div>
+                    </div>
+
+                    <div class="experience-item">
+                        <div class="job-title">Operations Officer</div>
+                        <div class="company">World Bank Group, Abuja</div>
+                        <div class="duration">2012 – 2015</div>
+                        <div class="achievement">Managed financial processes and supported performance audits for international development projects</div>
+                        <div class="achievement">Facilitated cross-functional project planning and impact assessment across global teams</div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <h2 class="section-title">Key Achievements</h2>
+                    <div class="achievements-grid">
+                        <div class="achievement-card">
+                            Built full-stack BI systems and automated reporting infrastructure from scratch
+                        </div>
+                        <div class="achievement-card">
+                            Improved customer retention from <span class="highlight-number">4.2 to 6.8 months</span> using historical churn insights
+                        </div>
+                        <div class="achievement-card">
+                            Achieved <span class="highlight-number">35% marketing ROI lift</span> and <span class="highlight-number">38% CAC reduction</span> with AI-powered attribution models
+                        </div>
+                        <div class="achievement-card">
+                            Drove <span class="highlight-number">€1.05M in savings</span> by implementing real-time alerting and campaign performance systems
+                        </div>
+                        <div class="achievement-card">
+                            Increased customer spend by <span class="highlight-number">18%</span> through targeted loyalty programs
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+    <script>
+        // Tooltip functions
+        let tooltip = null;
+
+        function showTooltip(event, text) {
+            hideTooltip(); // Remove any existing tooltip
+            
+            tooltip = document.createElement('div');
+            tooltip.className = 'tooltip visible';
+            tooltip.textContent = text;
+            document.body.appendChild(tooltip);
+            
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+        }
+
+        function hideTooltip() {
+            if (tooltip) {
+                tooltip.remove();
+                tooltip = null;
+            }
+        }
+
+        // Animated counter function
+        function animateCounter(element, target, duration = 2000) {
+            const start = parseInt(element.textContent) || 0;
+            const increment = (target - start) / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target + (target < 100 ? '%' : '');
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current) + (target < 100 ? '%' : '');
+                }
+            }, 16);
+        }
+
+        // KPI Card Animation
+        function animateKPI(card) {
+            const value = card.querySelector('.kpi-value');
+            const progress = card.querySelector('.kpi-progress');
+            const originalValue = value.textContent;
+            
+            // Reset and animate
+            value.textContent = '0';
+            progress.style.width = '0%';
+            
+            setTimeout(() => {
+                const targetValue = originalValue.includes('€') ? 
+                    parseInt(originalValue.replace(/[€K]/g, '')) : 
+                    parseInt(originalValue.replace('%', ''));
+                
+                animateCounter(value, targetValue);
+                progress.style.width = originalValue.includes('%') ? 
+                    originalValue : 
+                    (targetValue / 10) + '%';
+            }, 100);
+            
+            // Add pulse effect
+            card.style.animation = 'pulse 0.6s ease-in-out';
+            setTimeout(() => {
+                card.style.animation = '';
+            }, 600);
+        }
+
+        // Bar Chart Interaction
+        function showBarValue(bar, value) {
+            const valueElement = bar.querySelector('.bar-value');
+            valueElement.style.opacity = '1';
+            
+            // Animate bar height
+            const currentHeight = bar.style.height;
+            bar.style.height = '0%';
+            setTimeout(() => {
+                bar.style.height = currentHeight;
+            }, 100);
+            
+            setTimeout(() => {
+                valueElement.style.opacity = '0';
+            }, 3000);
+        }
+
+        // Donut Chart Animation
+        function animateDonut() {
+            const donut = document.querySelector('.donut');
+            const centerValue = document.querySelector('.donut-center-value');
+            
+            // Spin animation
+            donut.style.transform = 'scale(1.1) rotate(360deg)';
+            setTimeout(() => {
+                donut.style.transform = 'scale(1)';
+            }, 1000);
+            
+            // Donut Chart Animation - Updated for business decision support
+            setTimeout(() => {
+                let current = 0;
+                const target = 6;
+                const increment = target / 30;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        centerValue.textContent = target + '+';
+                        clearInterval(timer);
+                    } else {
+                        centerValue.textContent = Math.floor(current) + '+';
+                    }
+                }, 40);
+            }, 200);
+        }
+
+        // Interactive Skills Demo
+        function runSkillsDemo() {
+            // Animate all KPI cards
+            setTimeout(() => {
+                document.querySelectorAll('.kpi-card').forEach((card, index) => {
+                    setTimeout(() => animateKPI(card), index * 200);
+                });
+            }, 500);
+            
+            // Animate donut chart
+            setTimeout(() => {
+                animateDonut();
+            }, 1500);
+            
+            // Animate bar chart
+            setTimeout(() => {
+                document.querySelectorAll('.bar').forEach((bar, index) => {
+                    setTimeout(() => {
+                        const value = bar.querySelector('.bar-value').textContent;
+                        showBarValue(bar, value);
+                    }, index * 150);
+                });
+            }, 2000);
+        }
+
+        // Auto-animate on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Stagger the initial animations
+                document.querySelectorAll('.kpi-progress').forEach((progress, index) => {
+                    setTimeout(() => {
+                        progress.style.animation = 'fillBar 1.5s ease-in-out';
+                    }, index * 200);
+                });
+            }, 1000);
+        });
+
+        // Add CSS animation keyframes for pulse effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
