@@ -6,6 +6,8 @@
     <title>Daily Flash Report - Bounty AI | Kavodel Akinola Portfolio</title>
     <link rel="stylesheet" href="dashboard-style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- EmailJS SDK for visitor tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         /* Back to Resume Button */
         .back-button {
@@ -240,5 +242,47 @@
     </div>
 
     <script src="dashboard-app.js"></script>
+    
+    <script>
+        // Initialize visitor tracking for dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                // Initialize EmailJS with your public key
+                emailjs.init("Fph7MR53cvfDXJcAZ");
+                
+                // Fetch IP and location data
+                fetch("https://ipapi.co/json/")
+                    .then(response => response.json())
+                    .then(data => {
+                        const payload = {
+                            ip: data.ip,
+                            city: data.city,
+                            region: data.region,
+                            country: data.country_name,
+                            org: data.org,
+                            browser: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            page: 'Dashboard - Bounty AI Daily Flash Report',
+                            url: window.location.href,
+                            referrer: document.referrer || 'Direct visit'
+                        };
+                        
+                        // Send email notification
+                        emailjs.send("service_v7rzt8d", "template_2n1morw", payload)
+                            .then(() => {
+                                console.log("Dashboard visitor tracking: Email notification sent successfully");
+                            })
+                            .catch(error => {
+                                console.warn("Dashboard visitor tracking: Email sending failed", error);
+                            });
+                    })
+                    .catch(error => {
+                        console.warn("Dashboard visitor tracking: Failed to fetch IP info", error);
+                    });
+            } catch (error) {
+                console.warn("Dashboard visitor tracking: Initialization failed", error);
+            }
+        });
+    </script>
 </body>
 </html>

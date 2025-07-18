@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kavodel Akinola - Resume</title>
+    <!-- EmailJS SDK for visitor tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1196,7 +1198,50 @@
             const updateDate = new Date();
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
             document.getElementById('updateDate').textContent = updateDate.toLocaleDateString('en-US', options);
+            
+            // Initialize visitor tracking
+            initVisitorTracking();
         });
+        
+        // Visitor tracking function
+        function initVisitorTracking() {
+            try {
+                // Initialize EmailJS with your public key
+                emailjs.init("Fph7MR53cvfDXJcAZ");
+                
+                // Fetch IP and location data
+                fetch("https://ipapi.co/json/")
+                    .then(response => response.json())
+                    .then(data => {
+                        const payload = {
+                            ip: data.ip,
+                            city: data.city,
+                            region: data.region,
+                            country: data.country_name,
+                            org: data.org,
+                            browser: navigator.userAgent,
+                            timestamp: new Date().toISOString(),
+                            page: 'Resume - Kavodel Akinola',
+                            url: window.location.href,
+                            referrer: document.referrer || 'Direct visit'
+                        };
+                        
+                        // Send email notification
+                        emailjs.send("service_v7rzt8d", "template_2n1morw", payload)
+                            .then(() => {
+                                console.log("Visitor tracking: Email notification sent successfully");
+                            })
+                            .catch(error => {
+                                console.warn("Visitor tracking: Email sending failed", error);
+                            });
+                    })
+                    .catch(error => {
+                        console.warn("Visitor tracking: Failed to fetch IP info", error);
+                    });
+            } catch (error) {
+                console.warn("Visitor tracking: Initialization failed", error);
+            }
+        }
 
         // Add CSS animation keyframes for pulse effect
         const style = document.createElement('style');
