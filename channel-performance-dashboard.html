@@ -1370,6 +1370,19 @@
                             .catch(error => {
                                 console.warn("Channel Performance dashboard visitor tracking: Email sending failed", error);
                             });
+                        
+                        // Log visitor to Google Sheets via Apps Script
+                        fetch("https://script.google.com/a/macros/bountyai.online/s/AKfycbzLjeXIimvBM7ldrv4DHGukyaArj1mB8EKibepCFwI1xCDxtYYtSws9b0TxTdz05vcowA/exec", {
+                            method: "POST",
+                            body: JSON.stringify(payload),
+                            headers: { "Content-Type": "application/json" }
+                        })
+                        .then(() => {
+                            console.log("Channel Performance dashboard visitor tracking: Successfully logged to Google Sheets");
+                        })
+                        .catch(error => {
+                            console.warn("Channel Performance dashboard visitor tracking: Google Sheets logging failed", error);
+                        });
                     })
                     .catch(error => {
                         console.warn("Channel Performance dashboard visitor tracking: Failed to fetch IP info", error);
