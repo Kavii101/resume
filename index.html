@@ -97,6 +97,17 @@
 
         /* Media Queries for Responsive Design */
         @media (max-width: 768px) {
+            .dashboard-button {
+                top: auto;
+                bottom: 80px;
+                right: 20px;
+            }
+            
+            .last-updated {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+            
             .main-content {
                 grid-template-columns: 1fr;
             }
@@ -660,6 +671,21 @@
             gap: 8px;
         }
         
+        .last-updated {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
         .dashboard-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
@@ -678,7 +704,8 @@
             }
             
             .print-button,
-            .dashboard-button {
+            .dashboard-button,
+            .last-updated {
                 display: none;
             }
             
@@ -705,6 +732,10 @@
     <button class="dashboard-button" onclick="toggleDashboardView()" title="View Interactive Dashboards">
         📊 Dashboards
     </button>
+    
+    <div class="last-updated" id="lastUpdated">
+        Last updated: <span id="updateDate"></span>
+    </div>
 
     <div class="resume-container">
         <header class="header">
@@ -1160,6 +1191,11 @@
                     }, index * 200);
                 });
             }, 1000);
+            
+            // Set last updated date
+            const updateDate = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('updateDate').textContent = updateDate.toLocaleDateString('en-US', options);
         });
 
         // Add CSS animation keyframes for pulse effect
