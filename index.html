@@ -17,12 +17,14 @@
             color: #2c3e50;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
+            background-attachment: fixed;
         }
 
         .resume-container {
-            max-width: 900px;
-            margin: 0 auto;
+            width: 95%;
+            max-width: 1400px;
+            margin: 20px auto;
             background: white;
             border-radius: 16px;
             overflow: hidden;
@@ -56,14 +58,14 @@
         }
 
         .name {
-            font-size: 3rem;
+            font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 700;
             margin-bottom: 0.5rem;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
         .title {
-            font-size: 1.3rem;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
             margin-bottom: 1.5rem;
             opacity: 0.95;
             font-weight: 500;
@@ -80,7 +82,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-size: 0.95rem;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
         }
 
         .contact-icon {
@@ -91,6 +93,66 @@
             display: grid;
             grid-template-columns: 1fr 2fr;
             gap: 0;
+        }
+
+        /* Media Queries for Responsive Design */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                border-right: none;
+                border-bottom: 3px solid #e9ecef;
+            }
+            
+            .header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .contact-info {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
+            
+            .resume-container {
+                width: 100%;
+                border-radius: 0;
+                margin: 0;
+            }
+            
+            .section {
+                padding: 1rem;
+            }
+            
+            .main-section {
+                padding: 1.5rem;
+            }
+            
+            .sidebar {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .resume-container {
+                max-width: 1600px;
+            }
+            
+            .header {
+                padding: 3rem 3rem;
+            }
+            
+            .main-section,
+            .sidebar {
+                padding: 3rem;
+            }
         }
 
         .sidebar {
@@ -108,7 +170,7 @@
         }
 
         .section-title {
-            font-size: 1.4rem;
+            font-size: clamp(1.2rem, 2.5vw, 1.6rem);
             font-weight: 700;
             color: #667eea;
             margin-bottom: 1rem;
@@ -130,10 +192,10 @@
         .summary {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            padding: 1.5rem;
+            padding: clamp(1rem, 3vw, 2rem);
             border-radius: 12px;
             margin: 1.5rem 0;
-            font-size: 1.05rem;
+            font-size: clamp(1rem, 1.5vw, 1.1rem);
             line-height: 1.7;
             box-shadow: 0 8px 16px rgba(240, 147, 251, 0.3);
         }
@@ -154,14 +216,14 @@
         }
 
         .job-title {
-            font-size: 1.2rem;
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
             font-weight: 700;
             color: #2c3e50;
             margin-bottom: 0.3rem;
         }
 
         .company {
-            font-size: 1rem;
+            font-size: clamp(0.95rem, 1.8vw, 1.1rem);
             font-weight: 600;
             color: #667eea;
             margin-bottom: 0.3rem;
@@ -578,6 +640,32 @@
             opacity: 1;
         }
 
+        .dashboard-button {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .dashboard-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
         @media print {
             body {
                 background: white;
@@ -589,7 +677,8 @@
                 border-radius: 0;
             }
             
-            .print-button {
+            .print-button,
+            .dashboard-button {
                 display: none;
             }
             
@@ -611,6 +700,10 @@
 <body>
     <button class="print-button" onclick="window.print()" title="Print Resume">
         🖨️
+    </button>
+    
+    <button class="dashboard-button" onclick="toggleDashboardView()" title="View Interactive Dashboards">
+        📊 Dashboards
     </button>
 
     <div class="resume-container">
@@ -1079,4 +1172,209 @@
             }
         `;
         document.head.appendChild(style);
+        
+        // Dashboard Gallery functionality
+        function toggleDashboardView() {
+            // Create dashboard gallery HTML if it doesn't exist
+            let gallery = document.getElementById('dashboardGallery');
+            if (!gallery) {
+                gallery = createDashboardGallery();
+                document.body.appendChild(gallery);
+            }
+            gallery.classList.toggle('show');
+        }
+        
+        function createDashboardGallery() {
+            const gallery = document.createElement('div');
+            gallery.id = 'dashboardGallery';
+            gallery.className = 'dashboard-gallery';
+            gallery.innerHTML = `
+                <div class="gallery-container">
+                    <div class="gallery-header">
+                        <h1 class="gallery-title">📊 Interactive Dashboards Portfolio</h1>
+                        <button class="close-gallery" onclick="toggleDashboardView()">✕ Close</button>
+                    </div>
+                    
+                    <div class="dashboards-grid">
+                        <div class="dashboard-card" onclick="openDashboard('bounty-ai')">
+                            <div class="dashboard-preview">📈</div>
+                            <div class="dashboard-badge">Live</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Daily Flash Report - Bounty AI</h3>
+                                <p class="dashboard-description">Real-time KPI dashboard featuring deposit trends, VIP tier performance, campaign analytics, and conversion funnels. Built with Chart.js and modern web technologies.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card" onclick="alert('Coming soon!')">
+                            <div class="dashboard-preview">💰</div>
+                            <div class="dashboard-badge" style="background: #ffc107;">Coming Soon</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Revenue Analytics Dashboard</h3>
+                                <p class="dashboard-description">Comprehensive revenue tracking with predictive modeling, cohort analysis, and financial forecasting capabilities.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card" onclick="alert('Coming soon!')">
+                            <div class="dashboard-preview">🎯</div>
+                            <div class="dashboard-badge" style="background: #ffc107;">Coming Soon</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Marketing Attribution</h3>
+                                <p class="dashboard-description">Multi-touch attribution modeling, campaign ROI analysis, and customer journey visualization.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-card" onclick="alert('Coming soon!')">
+                            <div class="dashboard-preview">🔄</div>
+                            <div class="dashboard-badge" style="background: #ffc107;">Coming Soon</div>
+                            <div class="dashboard-info">
+                                <h3 class="dashboard-name">Churn Prediction Model</h3>
+                                <p class="dashboard-description">AI-powered churn prediction with risk scoring, intervention recommendations, and retention analytics.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add styles for dashboard gallery
+            const styles = `
+                .dashboard-gallery {
+                    display: none;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.95);
+                    z-index: 2000;
+                    overflow-y: auto;
+                    animation: fadeIn 0.3s ease;
+                }
+                
+                .dashboard-gallery.show {
+                    display: block;
+                }
+                
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                
+                .gallery-container {
+                    max-width: 1400px;
+                    margin: 0 auto;
+                    padding: 40px 20px;
+                }
+                
+                .gallery-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 40px;
+                    color: white;
+                }
+                
+                .gallery-title {
+                    font-size: 2.5rem;
+                    font-weight: 700;
+                }
+                
+                .close-gallery {
+                    background: white;
+                    color: #667eea;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 20px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+                
+                .close-gallery:hover {
+                    background: #f0f0f0;
+                    transform: scale(1.05);
+                }
+                
+                .dashboards-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                    gap: 30px;
+                    margin-bottom: 40px;
+                }
+                
+                .dashboard-card {
+                    background: white;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                    position: relative;
+                }
+                
+                .dashboard-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                }
+                
+                .dashboard-preview {
+                    width: 100%;
+                    height: 200px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 3rem;
+                    color: white;
+                }
+                
+                .dashboard-info {
+                    padding: 20px;
+                }
+                
+                .dashboard-name {
+                    font-size: 1.3rem;
+                    font-weight: 700;
+                    color: #2c3e50;
+                    margin-bottom: 10px;
+                }
+                
+                .dashboard-description {
+                    color: #6c757d;
+                    line-height: 1.6;
+                }
+                
+                .dashboard-badge {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: #28a745;
+                    color: white;
+                    padding: 5px 15px;
+                    border-radius: 20px;
+                    font-size: 0.8rem;
+                    font-weight: 600;
+                }
+                
+                @media (max-width: 768px) {
+                    .gallery-title {
+                        font-size: 1.8rem;
+                    }
+                    
+                    .dashboards-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            `;
+            
+            const styleElement = document.createElement('style');
+            styleElement.textContent = styles;
+            document.head.appendChild(styleElement);
+            
+            return gallery;
+        }
+        
+        function openDashboard(dashboardId) {
+            if (dashboardId === 'bounty-ai') {
+                window.open('dashboard-bounty-ai.html', '_blank');
+            }
+        }
     </script>
