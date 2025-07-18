@@ -1208,7 +1208,7 @@
             initVisitorTracking();
         });
         
-        // Enhanced visitor tracking with duration logging
+        // Enhanced visitor tracking with two-part logging system
         const pageStartTime = Date.now();
         
         function initVisitorTracking() {
@@ -1216,11 +1216,11 @@
                 // Initialize EmailJS with your public key
                 emailjs.init("Fph7MR53cvfDXJcAZ");
                 
-                // Fetch IP and location data
+                // Part 1: Log initial visit with full IP/geolocation data
                 fetch("https://ipapi.co/json/")
                     .then(response => response.json())
                     .then(data => {
-                        const payload = {
+                        const visitPayload = {
                             ip: data.ip,
                             city: data.city,
                             region: data.region,
@@ -1231,44 +1231,50 @@
                             title: document.title,
                             timestamp: new Date().toISOString(),
                             url: window.location.href,
-                            referrer: document.referrer || 'Direct visit'
+                            referrer: document.referrer || 'Direct visit',
+                            duration: '' // Empty for initial visit
                         };
                         
                         // Send email notification
-                        emailjs.send("service_v7rzt8d", "template_2n1morw", payload)
+                        emailjs.send("service_v7rzt8d", "template_2n1morw", visitPayload)
                             .then(() => {
-                                console.log("Visitor tracking: Email notification sent successfully");
+                                console.log("✅ Visitor tracking: Email notification sent successfully");
                             })
                             .catch(error => {
-                                console.warn("Visitor tracking: Email sending failed", error);
+                                console.warn("⚠️ Visitor tracking: Email sending failed", error);
                             });
                         
-                        // Log visitor to Google Sheets via enhanced Apps Script
+                        // Log initial visit to Google Sheets
                         fetch("https://script.google.com/a/macros/bountyai.online/s/AKfycbwgG5DzrMBJqZQwDHxPjUdiT-tilF8Ihq9HcwmRR8JUFzKUJL3rRTm0Z7j5z5iaO_lf/exec", {
                             method: "POST",
-                            body: JSON.stringify(payload),
+                            body: JSON.stringify(visitPayload),
                             headers: { "Content-Type": "application/json" }
                         })
                         .then(() => {
-                            console.log("Visitor tracking: Successfully logged to Google Sheets");
+                            console.log("✅ Visitor tracking: Initial visit logged to Google Sheets");
                         })
                         .catch(error => {
-                            console.warn("Visitor tracking: Google Sheets logging failed", error);
+                            console.warn("⚠️ Visitor tracking: Google Sheets logging failed", error);
                         });
                     })
                     .catch(error => {
-                        console.warn("Visitor tracking: Failed to fetch IP info", error);
+                        console.warn("⚠️ Visitor tracking: Failed to fetch IP info", error);
                     });
             } catch (error) {
-                console.warn("Visitor tracking: Initialization failed", error);
+                console.warn("⚠️ Visitor tracking: Initialization failed", error);
             }
         }
         
-        // Track page duration on unload
+        // Part 2: Track page duration on unload (separate entry)
         window.addEventListener("beforeunload", () => {
             const duration = Math.round((Date.now() - pageStartTime) / 1000);
             
             const durationPayload = {
+                ip: '',
+                city: '',
+                region: '',
+                country: '',
+                org: '',
                 browser: navigator.userAgent,
                 page: window.location.pathname,
                 title: document.title,
@@ -1281,6 +1287,8 @@
                 "https://script.google.com/a/macros/bountyai.online/s/AKfycbwgG5DzrMBJqZQwDHxPjUdiT-tilF8Ihq9HcwmRR8JUFzKUJL3rRTm0Z7j5z5iaO_lf/exec",
                 JSON.stringify(durationPayload)
             );
+            
+            console.log(`✅ Duration tracking: ${duration} seconds logged`);
         });
 
         // Add CSS animation keyframes for pulse effect
