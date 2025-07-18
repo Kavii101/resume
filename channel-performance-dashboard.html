@@ -1340,7 +1340,9 @@
                 }
             });
             
-            // Initialize visitor tracking for channel performance dashboard
+            // Enhanced visitor tracking with duration logging for channel performance dashboard
+            const pageStartTime = Date.now();
+            
             try {
                 // Initialize EmailJS
                 emailjs.init("Fph7MR53cvfDXJcAZ");
@@ -1356,8 +1358,9 @@
                             country: data.country_name,
                             org: data.org,
                             browser: navigator.userAgent,
+                            page: window.location.pathname,
+                            title: document.title,
                             timestamp: new Date().toISOString(),
-                            page: 'Dashboard - Channel Performance & Affiliate Cohort',
                             url: window.location.href,
                             referrer: document.referrer || 'Direct visit'
                         };
@@ -1371,8 +1374,8 @@
                                 console.warn("Channel Performance dashboard visitor tracking: Email sending failed", error);
                             });
                         
-                        // Log visitor to Google Sheets via Apps Script
-                        fetch("https://script.google.com/a/macros/bountyai.online/s/AKfycbzLjeXIimvBM7ldrv4DHGukyaArj1mB8EKibepCFwI1xCDxtYYtSws9b0TxTdz05vcowA/exec", {
+                        // Log visitor to Google Sheets via enhanced Apps Script
+                        fetch("https://script.google.com/a/macros/bountyai.online/s/AKfycbwgG5DzrMBJqZQwDHxPjUdiT-tilF8Ihq9HcwmRR8JUFzKUJL3rRTm0Z7j5z5iaO_lf/exec", {
                             method: "POST",
                             body: JSON.stringify(payload),
                             headers: { "Content-Type": "application/json" }
@@ -1390,6 +1393,25 @@
             } catch (error) {
                 console.warn("Channel Performance dashboard visitor tracking: Initialization failed", error);
             }
+            
+            // Track page duration on unload
+            window.addEventListener("beforeunload", () => {
+                const duration = Math.round((Date.now() - pageStartTime) / 1000);
+                
+                const durationPayload = {
+                    browser: navigator.userAgent,
+                    page: window.location.pathname,
+                    title: document.title,
+                    timestamp: new Date().toISOString(),
+                    duration: duration
+                };
+                
+                // Use sendBeacon for reliable unload tracking
+                navigator.sendBeacon(
+                    "https://script.google.com/a/macros/bountyai.online/s/AKfycbwgG5DzrMBJqZQwDHxPjUdiT-tilF8Ihq9HcwmRR8JUFzKUJL3rRTm0Z7j5z5iaO_lf/exec",
+                    JSON.stringify(durationPayload)
+                );
+            });
         });
     </script>
 </body>
